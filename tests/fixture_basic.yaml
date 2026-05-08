@@ -1,0 +1,11 @@
+name: basic_test
+nominal_current: "240A"
+slew_rate: "6A/us"
+resolution: "1us"
+
+steps:
+  - {t: "0us", value: "0A"}
+  - {hold: "175%", for: "500us"}
+  - {hold: "360A", for: "5ms"}
+  - {hold: "125%", for: "50ms", slew_rate: "3A/us"}
+  - {t: "1s", value: "0A"}
