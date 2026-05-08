@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "waveform-dsl"
+version = "0.1.0"
+description = "YAML-driven piecewise-linear waveform generator for LTspice, SPICE, and PLECS"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+keywords = ["waveform", "PWL", "SPICE", "LTspice", "PLECS", "circuit-simulation", "power-electronics"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=1.5",
+    "pint>=0.21",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+plot = ["matplotlib>=3.7"]
+dev  = ["pytest"]
+
+[project.scripts]
+waveform-dsl = "waveform_dsl.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
