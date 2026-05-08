@@ -1,4 +1,4 @@
-# waveform-dsl
+# wavecraft
 
 YAML-driven piecewise-linear waveform generator for circuit simulators — outputs CSV, SPICE PWL, LTspice `PWL FILE=`, and PLECS 1D lookup tables.
 
@@ -9,14 +9,14 @@ Define a load current waveform in YAML — with slew rates, hold times, and perc
 ## Install
 
 ```bash
-pip install waveform-dsl          # once published to PyPI
+pip install wavecraft          # once published to PyPI
 pip install -e ".[dev]"           # development install from source
 ```
 
 ## Quick start
 
 ```bash
-waveform-dsl examples/nvidia_pulse.yaml --formats ltspice,pwl
+wavecraft examples/nvidia_pulse.yaml --formats ltspice,pwl
 ```
 
 ```
@@ -80,7 +80,7 @@ steps:
 ## CLI reference
 
 ```
-waveform-dsl INPUT [--out-dir DIR] [--dt TIME] [--formats LIST] [--plot]
+wavecraft INPUT [--out-dir DIR] [--dt TIME] [--formats LIST] [--plot]
 
   INPUT           Path to .yaml waveform definition
   --out-dir DIR   Output directory (default: same dir as input)
@@ -92,7 +92,7 @@ waveform-dsl INPUT [--out-dir DIR] [--dt TIME] [--formats LIST] [--plot]
 ## Python API
 
 ```python
-from waveform_dsl import parse_yaml, build_breakpoints, export_ltspice_pwl
+from wavecraft import parse_yaml, build_breakpoints, export_ltspice_pwl
 
 spec = parse_yaml("examples/nvidia_pulse.yaml")
 bps  = build_breakpoints(spec)

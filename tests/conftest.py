@@ -4,7 +4,7 @@ The test file uses bare names (parse_quantity, build_breakpoints, resample, …)
 are only imported in the __main__ block.  Under pytest the module is imported directly
 so those names are never bound.  This conftest patches them in at collection time.
 """
-import waveform_dsl as _wdsl
+import wavecraft as _wdsl
 
 
 def pytest_collection_finish(session):

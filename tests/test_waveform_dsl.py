@@ -4,7 +4,7 @@ import traceback
 import warnings
 from pathlib import Path
 
-from waveform_dsl import WaveformStep, WaveformSpec
+from wavecraft import WaveformStep, WaveformSpec
 
 passed = 0
 failed = 0
@@ -82,17 +82,17 @@ def test_parse_24mA():
     assert abs(q.to('ampere').magnitude - 0.024) < 1e-9, q
 
 def test_resolve_percent():
-    from waveform_dsl.parser import _resolve_value
+    from wavecraft.parser import _resolve_value
     val = _resolve_value("175%", 240.0)
     assert abs(val - 420.0) < 1e-9, val
 
 def test_resolve_absolute_amps():
-    from waveform_dsl.parser import _resolve_value
+    from wavecraft.parser import _resolve_value
     val = _resolve_value("360A", None)
     assert abs(val - 360.0) < 1e-9, val
 
 def test_resolve_percent_no_nominal_raises():
-    from waveform_dsl.parser import _resolve_value
+    from wavecraft.parser import _resolve_value
     try:
         _resolve_value("175%", None)
         assert False, "Should have raised ValueError"
@@ -102,7 +102,7 @@ def test_resolve_percent_no_nominal_raises():
 # ── Task 3: YAML parser ───────────────────────────────────────────────────────
 
 def test_parse_yaml_globals():
-    from waveform_dsl import parse_yaml
+    from wavecraft import parse_yaml
     fixture = Path(__file__).parent / 'fixture_basic.yaml'
     spec = parse_yaml(fixture)
     assert spec.name == 'basic_test'
@@ -111,13 +111,13 @@ def test_parse_yaml_globals():
     assert abs(spec.resolution - 1e-6) < 1e-15    # 1us = 1e-6 s
 
 def test_parse_yaml_step_count():
-    from waveform_dsl import parse_yaml
+    from wavecraft import parse_yaml
     fixture = Path(__file__).parent / 'fixture_basic.yaml'
     spec = parse_yaml(fixture)
     assert len(spec.steps) == 5
 
 def test_parse_yaml_absolute_step():
-    from waveform_dsl import parse_yaml
+    from wavecraft import parse_yaml
     fixture = Path(__file__).parent / 'fixture_basic.yaml'
     spec = parse_yaml(fixture)
     s = spec.steps[0]   # {t: 0us, value: 0A}
@@ -126,7 +126,7 @@ def test_parse_yaml_absolute_step():
     assert abs(s.value - 0.0) < 1e-9
 
 def test_parse_yaml_hold_percent_step():
-    from waveform_dsl import parse_yaml
+    from wavecraft import parse_yaml
     fixture = Path(__file__).parent / 'fixture_basic.yaml'
     spec = parse_yaml(fixture)
     s = spec.steps[1]   # {hold: "175%", for: "500us"}
@@ -136,7 +136,7 @@ def test_parse_yaml_hold_percent_step():
     assert s.slew_rate is None                  # no per-step override
 
 def test_parse_yaml_hold_absolute_step():
-    from waveform_dsl import parse_yaml
+    from wavecraft import parse_yaml
     fixture = Path(__file__).parent / 'fixture_basic.yaml'
     spec = parse_yaml(fixture)
     s = spec.steps[2]   # {hold: "360A", for: "5ms"}
@@ -144,7 +144,7 @@ def test_parse_yaml_hold_absolute_step():
     assert abs(s.hold_duration - 5e-3) < 1e-15
 
 def test_parse_yaml_per_step_slew():
-    from waveform_dsl import parse_yaml
+    from wavecraft import parse_yaml
     fixture = Path(__file__).parent / 'fixture_basic.yaml'
     spec = parse_yaml(fixture)
     s = spec.steps[3]   # {hold: "125%", for: "50ms", slew_rate: "3A/us"}
@@ -152,7 +152,7 @@ def test_parse_yaml_per_step_slew():
     assert abs(s.slew_rate - 3e6) < 1.0        # 3 A/us = 3e6 A/s
 
 def test_parse_yaml_absolute_timestamp():
-    from waveform_dsl import parse_yaml
+    from wavecraft import parse_yaml
     fixture = Path(__file__).parent / 'fixture_basic.yaml'
     spec = parse_yaml(fixture)
     s = spec.steps[4]   # {t: "1s", value: "0A"}
@@ -454,7 +454,7 @@ if __name__ == '__main__':
     run_test('WaveformSpec defaults', test_waveformspec_defaults)
 
     print('\n=== Task 2: Unit parser ===')
-    from waveform_dsl import parse_quantity
+    from wavecraft import parse_quantity
     run_test('parse 240A', test_parse_240A)
     run_test('parse 6A/us', test_parse_6A_per_us)
     run_test('parse 500us', test_parse_500us)
@@ -476,7 +476,7 @@ if __name__ == '__main__':
     run_test('parse_yaml absolute timestamp', test_parse_yaml_absolute_timestamp)
 
     print('\n=== Task 4: Engine — hold steps ===')
-    from waveform_dsl import build_breakpoints
+    from wavecraft import build_breakpoints
     run_test('hold basic ramp+hold', test_hold_basic_ramp_and_hold)
     run_test('hold no delta no ramp', test_hold_no_delta_no_ramp)
     run_test('hold resolution fallback', test_hold_resolution_fallback_ramp)
@@ -494,7 +494,7 @@ if __name__ == '__main__':
 
     print('\n=== Task 6: Resampler + CSV ===')
     import tempfile
-    from waveform_dsl import resample, export_csv
+    from wavecraft import resample, export_csv
     tmp = Path(tempfile.mkdtemp())
     run_test('resample linear ramp', test_resample_linear_ramp)
     run_test('resample hold', test_resample_hold)
@@ -502,7 +502,7 @@ if __name__ == '__main__':
     run_test('export_csv columns', lambda: test_export_csv_columns(tmp))
 
     print('\n=== Task 7: PWL + PLECS exporters ===')
-    from waveform_dsl import export_pwl, export_plecs, export_ltspice_pwl
+    from wavecraft import export_pwl, export_plecs, export_ltspice_pwl
     run_test('export_pwl format', lambda: test_export_pwl_format(tmp))
     run_test('export_pwl breakpoint count', lambda: test_export_pwl_breakpoint_count(tmp))
     run_test('export_plecs format', lambda: test_export_plecs_format(tmp))

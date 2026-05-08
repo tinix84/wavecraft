@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "waveform-dsl"
+name = "wavecraft"
 version = "0.1.0"
 description = "YAML-driven piecewise-linear waveform generator for LTspice, SPICE, and PLECS"
 readme = "README.md"
@@ -29,7 +29,7 @@ plot = ["matplotlib>=3.7"]
 dev  = ["pytest"]
 
 [project.scripts]
-waveform-dsl = "waveform_dsl.cli:main"
+wavecraft = "wavecraft.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

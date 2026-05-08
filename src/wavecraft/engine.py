@@ -68,7 +68,7 @@ def build_breakpoints(spec: WaveformSpec) -> list[tuple[float, float]]:
                 if ramp_start > current_t + 1e-15:
                     append_safe(ramp_start, prev_amp)
                 append_safe(actual_t, step.value)
-                current_t = declared_t if actual_t > declared_t else actual_t
+                current_t = actual_t
 
             else:
                 actual_t = declared_t

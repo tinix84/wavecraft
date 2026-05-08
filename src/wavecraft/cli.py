@@ -9,13 +9,13 @@ from .models import WaveformSpec
 from .parser import parse_quantity, parse_yaml
 
 
-def _run(spec: WaveformSpec, out_dir: Path, formats: list[str], dt_override: float | None) -> None:
+def _run(spec: WaveformSpec, out_dir: Path, formats: list[str], dt_override: float | None) -> list[tuple[float, float]]:
     bps = build_breakpoints(spec)
     name = spec.name
 
     if not bps:
         print("  WARNING: no breakpoints generated — check waveform steps.")
-        return
+        return bps
 
     t_end_us = bps[-1][0] * 1e6
     t_end_ms = bps[-1][0] * 1e3
@@ -49,6 +49,8 @@ def _run(spec: WaveformSpec, out_dir: Path, formats: list[str], dt_override: flo
         export_ltspice_pwl(bps, path, spec=spec)
         print(f"  Saved LTspice : {path}")
 
+    return bps
+
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
@@ -81,12 +83,11 @@ def main(argv: list[str] | None = None) -> None:
     print(f"  Steps       : {len(spec.steps)}")
     print()
 
-    _run(spec, out_dir, formats, dt_override)
+    bps = _run(spec, out_dir, formats, dt_override)
 
     if args.plot:
         try:
             import matplotlib.pyplot as plt
-            bps = build_breakpoints(spec)
             t_us = [p[0] * 1e6 for p in bps]
             a    = [p[1] for p in bps]
             plt.figure(figsize=(12, 4))
