@@ -47,8 +47,8 @@ Loading: examples/nvidia_pulse.yaml
 | Keys | Meaning |
 |---|---|
 | `hold: VALUE, for: DURATION` | Ramp to VALUE (using slew), then hold for DURATION |
-| `t: TIME, value: VALUE` | Reach VALUE at absolute timestamp TIME. TIME may be prefixed with `+` to mean "DURATION after the previous step's t" |
-| `dt: DURATION, value: VALUE` | Reach VALUE at `prev_t + DURATION`. Equivalent to `t: "+DURATION"` |
+| `t: TIME, value: VALUE` | Reach VALUE at absolute timestamp TIME. TIME may be prefixed with `+` to mean "DURATION after the previous absolute timestamp" |
+| `dt: DURATION, value: VALUE` | Reach VALUE at `prev_t + DURATION`, where `prev_t` is the **previous absolute timestamp** (i.e., the most recent `t:` step's time; `hold:` steps do not advance `prev_t`). Equivalent to `t: "+DURATION"` |
 | `slew_rate: RATE` | Optional per-step slew override (any step kind above) |
 
 **VALUE** accepts: `"240A"`, `"175%"` (of `nominal_current`), `"24mA"`  
@@ -77,6 +77,8 @@ steps:
 | SPICE PWL | `.pwl` | Inline `PWL(...)` element for LTspice / ngspice |
 | LTspice PWL FILE= | `_ltspice.pwl` | Two-column `time(s) current(A)` data file |
 | PLECS | `_plecs.py` | `x` and `f_x` vectors for a 1D Lookup Table block |
+
+> **Note:** The LTspice `PWL FILE=` output (`_ltspice.pwl`) now emits each row after the first as a `+tdelta` relative-time entry. LTspice accepts this format natively and it is more readable for long waveforms. If you have external tooling that parsed the previous absolute-timestamp two-column format, update it accordingly. The inline `PWL(...)` output (`.pwl`) keeps absolute timestamps by default for ngspice compatibility; pass `--relative-time` to switch it.
 
 ## CLI reference
 

@@ -327,6 +327,44 @@ steps:
     assert False, "Expected ValueError for dt without value"
 
 
+def test_parse_yaml_dt_with_per_step_slew_rate(tmp_path):
+    """A dt: step still honors a per-step slew_rate override."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: dt_slew
+slew_rate: "6A/us"
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "1ms", value: "100A", slew_rate: "3A/us"}
+"""
+    p = tmp_path / "dt_slew.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert spec.steps[1].kind == 'absolute'
+    assert abs(spec.steps[1].t - 1e-3) < 1e-15
+    assert spec.steps[1].slew_rate is not None
+    assert abs(spec.steps[1].slew_rate - 3e6) < 1.0
+
+
+def test_parse_yaml_t_plus_unparseable_raises_with_step_index(tmp_path):
+    """A '+'-prefixed t: that pint cannot parse should yield a ValueError mentioning the step."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: bad_plus
+steps:
+  - {t: "0us", value: "0A"}
+  - {t: "+nonsense", value: "1A"}
+"""
+    p = tmp_path / "bad.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 1" in str(e)
+        return
+    assert False, "Expected ValueError for unparseable '+' duration"
+
+
 # ── Task 4: Engine — hold steps ───────────────────────────────────────────────
 
 def test_hold_basic_ramp_and_hold():

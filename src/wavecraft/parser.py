@@ -101,7 +101,12 @@ def parse_yaml(path: str | Path) -> WaveformSpec:
         elif 't' in step_raw:
             t_raw = str(step_raw['t']).strip()
             if t_raw.startswith('+'):
-                delta = parse_quantity(t_raw[1:]).to('second').magnitude
+                try:
+                    delta = parse_quantity(t_raw[1:]).to('second').magnitude
+                except Exception as e:
+                    raise ValueError(
+                        f"Step {i}: cannot parse {t_raw!r} as a duration: {e}"
+                    ) from e
                 if delta < 0:
                     raise ValueError(
                         f"Step {i}: relative time delta must be non-negative, got {t_raw!r}."
