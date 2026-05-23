@@ -723,6 +723,35 @@ steps:
     assert data[1].split()[0].startswith('+'), data[1]
 
 
+def test_ltspice_article_example_roundtrip(tmp_path):
+    """Reproduce PWL(0 0 +1m 1 +1m 1 +1m 0) from the Analog article."""
+    from wavecraft import parse_yaml, build_breakpoints, export_pwl
+    yaml_text = """
+name: ltspice_article
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "1ms", value: "1A"}
+  - {dt: "1ms", value: "1A"}
+  - {dt: "1ms", value: "0A"}
+"""
+    yp = tmp_path / "article.yaml"
+    yp.write_text(yaml_text)
+    spec = parse_yaml(yp)
+    bps = build_breakpoints(spec)
+    # Expect exactly four breakpoints at 0, 1ms, 2ms, 3ms with the listed values.
+    expected = [(0.0, 0.0), (1e-3, 1.0), (2e-3, 1.0), (3e-3, 0.0)]
+    assert len(bps) == len(expected), bps
+    for got, exp in zip(bps, expected):
+        assert abs(got[0] - exp[0]) < 1e-12, (got, exp)
+        assert abs(got[1] - exp[1]) < 1e-12, (got, exp)
+
+    out = tmp_path / "article.pwl"
+    export_pwl(bps, out, relative_time=True)
+    text = out.read_text()
+    # Three relative deltas of 1000.000000 microseconds.
+    assert text.count("+1000.000000u") == 3, text
+
+
 if __name__ == '__main__':
     print('=== Task 1: Data model ===')
     run_test('WaveformStep hold defaults', test_waveformstep_hold_defaults)
