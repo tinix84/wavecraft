@@ -181,6 +181,39 @@ steps:
     assert abs(spec.steps[1].value - 1.0) < 1e-12
 
 
+def test_parse_yaml_t_plus_first_step(tmp_path):
+    """A leading +DUR step anchors against prev_t=0."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: rel_first
+steps:
+  - {t: "+500us", value: "1A"}
+  - {t: "+500us", value: "0A"}
+"""
+    p = tmp_path / "rel_first.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert abs(spec.steps[0].t - 500e-6) < 1e-15
+    assert abs(spec.steps[1].t - 1000e-6) < 1e-15
+
+
+def test_parse_yaml_t_plus_after_hold(tmp_path):
+    """A hold step must not advance prev_t; the next +DUR anchors at the prior absolute t."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: hold_then_rel
+steps:
+  - {t: "0us", value: "0A"}
+  - {hold: "10A", for: "500us"}
+  - {t: "+1ms", value: "0A"}
+"""
+    p = tmp_path / "hold_then_rel.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    # prev_t after step 0 = 0; hold leaves prev_t at 0; so step 2's resolved t = 0 + 1ms.
+    assert abs(spec.steps[2].t - 1e-3) < 1e-15
+
+
 # ── Task 4: Engine — hold steps ───────────────────────────────────────────────
 
 def test_hold_basic_ramp_and_hold():
