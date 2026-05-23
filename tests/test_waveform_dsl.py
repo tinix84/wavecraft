@@ -646,6 +646,43 @@ def test_export_ltspice_pwl_emits_relative_deltas(tmp_path):
     assert abs(float(third_cols[0][1:]) - 0.005) < 1e-15
 
 
+def test_export_pwl_default_is_absolute(tmp_path):
+    from wavecraft import export_pwl
+    bps = [(0.0, 0.0), (0.0005, 420.0), (0.0055, 360.0)]
+    out = tmp_path / "abs.pwl"
+    export_pwl(bps, out)
+    text = out.read_text()
+    # SPICE PWL continuation lines start with '+' in column 0.
+    # Strip that and look at the time tokens that follow.
+    body = [ln[1:].lstrip() for ln in text.splitlines() if ln.startswith('+')]
+    data = [ln for ln in body if ln and ln[0].isdigit()]
+    assert len(data) == 3
+    for ln in data:
+        first = ln.split()[0]
+        assert not first.startswith('+'), f"unexpected '+' prefix: {first}"
+
+
+def test_export_pwl_relative_time_true(tmp_path):
+    from wavecraft import export_pwl
+    bps = [(0.0, 0.0), (0.0005, 420.0), (0.0055, 360.0)]
+    out = tmp_path / "rel.pwl"
+    export_pwl(bps, out, relative_time=True)
+    text = out.read_text()
+    body = [ln[1:].lstrip() for ln in text.splitlines() if ln.startswith('+')]
+    data = [ln for ln in body if ln and (ln[0].isdigit() or ln[0] == '+')]
+    assert len(data) == 3
+    # First row absolute (no '+' on time)
+    assert not data[0].split()[0].startswith('+')
+    # Subsequent rows have '+' prefix
+    assert data[1].split()[0].startswith('+')
+    assert data[2].split()[0].startswith('+')
+    # Delta from (0.0005 - 0) = 500us; from (0.0055 - 0.0005) = 5000us
+    d1 = float(data[1].split()[0].rstrip('u').lstrip('+'))
+    d2 = float(data[2].split()[0].rstrip('u').lstrip('+'))
+    assert abs(d1 - 500.0) < 1e-6
+    assert abs(d2 - 5000.0) < 1e-6
+
+
 if __name__ == '__main__':
     print('=== Task 1: Data model ===')
     run_test('WaveformStep hold defaults', test_waveformstep_hold_defaults)
