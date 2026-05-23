@@ -18,9 +18,20 @@ CELL_WIDTH = 560
 
 
 def _pwl_string(bps: list[tuple[float, float]]) -> str:
-    """Format breakpoints as a repeating LTspice PWL value string."""
+    """Format breakpoints as a repeating LTspice PWL value string.
+
+    Enforces two constraints required by LTspice REPEAT FOREVER:
+    - First breakpoint must be at t=0 (prepend if the engine pushed it forward).
+    - Last amplitude must equal the first (append a 1µs return-to-start if not,
+      creating a fast reset rather than a discontinuity at the repeat boundary).
+    """
+    pts = list(bps)
+    if pts[0][0] > 1e-12:                        # doesn't start at t=0
+        pts.insert(0, (0.0, pts[0][1]))
+    if abs(pts[-1][1] - pts[0][1]) > 1e-9:       # last amp ≠ first amp
+        pts.append((pts[-1][0] + 1e-6, pts[0][1]))
     tokens = []
-    for t_s, amp_a in bps:
+    for t_s, amp_a in pts:
         tokens.append(f"{t_s:.10g}")
         tokens.append(f"{amp_a:.6g}")
     return "PWL REPEAT FOREVER (" + " ".join(tokens) + ") ENDREPEAT"
