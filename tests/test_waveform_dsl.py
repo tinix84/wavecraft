@@ -257,6 +257,76 @@ steps:
     assert abs(spec.steps[0].t - 1e-3) < 1e-15
 
 
+def test_parse_yaml_negative_dt_raises(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: neg
+steps:
+  - {t: "1ms", value: "0A"}
+  - {dt: "-1ms", value: "1A"}
+"""
+    p = tmp_path / "neg.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "1" in str(e)  # step index appears
+        return
+    assert False, "Expected ValueError for negative dt"
+
+
+def test_parse_yaml_negative_t_plus_raises(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: neg2
+steps:
+  - {t: "1ms", value: "0A"}
+  - {t: "+-1ms", value: "1A"}
+"""
+    p = tmp_path / "neg2.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "1" in str(e)
+        return
+    assert False, "Expected ValueError for negative t+ delta"
+
+
+def test_parse_yaml_t_and_dt_conflict_raises(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: conflict
+steps:
+  - {t: "1ms", dt: "1ms", value: "0A"}
+"""
+    p = tmp_path / "conflict.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "0" in str(e)
+        return
+    assert False, "Expected ValueError for t+dt on same step"
+
+
+def test_parse_yaml_dt_without_value_raises(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: noval
+steps:
+  - {dt: "1ms"}
+"""
+    p = tmp_path / "noval.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except (ValueError, KeyError) as e:
+        assert "0" in str(e) or "value" in str(e).lower()
+        return
+    assert False, "Expected error for dt without value"
+
+
 # ── Task 4: Engine — hold steps ───────────────────────────────────────────────
 
 def test_hold_basic_ramp_and_hold():
