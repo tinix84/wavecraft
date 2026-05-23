@@ -214,6 +214,49 @@ steps:
     assert abs(spec.steps[2].t - 1e-3) < 1e-15
 
 
+def test_parse_yaml_dt_key(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: dt_test
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "1ms", value: "1A"}
+  - {dt: "1ms", value: "0A"}
+"""
+    p = tmp_path / "dt.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert len(spec.steps) == 3
+    assert spec.steps[1].kind == 'absolute' and abs(spec.steps[1].t - 1e-3) < 1e-15
+    assert spec.steps[2].kind == 'absolute' and abs(spec.steps[2].t - 2e-3) < 1e-15
+
+
+def test_parse_yaml_dt_equivalent_to_t_plus(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_a = "name: a\nsteps:\n  - {t: '0us', value: '0A'}\n  - {t: '+1ms', value: '1A'}\n"
+    yaml_b = "name: b\nsteps:\n  - {t: '0us', value: '0A'}\n  - {dt: '1ms', value: '1A'}\n"
+    pa = tmp_path / "a.yaml"; pa.write_text(yaml_a)
+    pb = tmp_path / "b.yaml"; pb.write_text(yaml_b)
+    sa = parse_yaml(pa); sb = parse_yaml(pb)
+    assert sa.steps[1].t == sb.steps[1].t
+    assert sa.steps[1].value == sb.steps[1].value
+    assert sa.steps[1].kind == sb.steps[1].kind
+
+
+def test_parse_yaml_dt_first_step(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: dt_first
+steps:
+  - {dt: "1ms", value: "1A"}
+"""
+    p = tmp_path / "dtf.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert spec.steps[0].kind == 'absolute'
+    assert abs(spec.steps[0].t - 1e-3) < 1e-15
+
+
 # ── Task 4: Engine — hold steps ───────────────────────────────────────────────
 
 def test_hold_basic_ramp_and_hold():

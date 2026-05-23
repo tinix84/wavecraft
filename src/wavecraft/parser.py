@@ -108,9 +108,20 @@ def parse_yaml(path: str | Path) -> WaveformSpec:
                 slew_rate=step_slew,
             ))
             prev_t = t
+        elif 'dt' in step_raw:
+            delta = parse_quantity(str(step_raw['dt'])).to('second').magnitude
+            t = prev_t + delta
+            value = _resolve_value(str(step_raw['value']), nominal_current)
+            steps.append(WaveformStep(
+                kind='absolute',
+                t=t,
+                value=value,
+                slew_rate=step_slew,
+            ))
+            prev_t = t
         else:
             raise ValueError(
-                f"Step {i}: must have 'hold'+'for' or 't'+'value' keys. "
+                f"Step {i}: must have 'hold'+'for', 't'+'value', or 'dt'+'value' keys. "
                 f"Got: {list(step_raw.keys())}"
             )
 
