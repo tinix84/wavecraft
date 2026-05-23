@@ -365,6 +365,44 @@ steps:
     assert False, "Expected ValueError for unparseable '+' duration"
 
 
+def test_parse_yaml_t_step_missing_value_raises(tmp_path):
+    """A 't' step without a 'value' key should raise ValueError mentioning the step index."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: noval_t
+steps:
+  - {t: "0us", value: "0A"}
+  - {t: "1ms"}
+"""
+    p = tmp_path / "noval_t.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 1" in str(e), f"Expected step index in error, got: {e}"
+        return
+    assert False, "Expected ValueError for t step without value"
+
+
+def test_parse_yaml_dt_unparseable_raises_with_step_index(tmp_path):
+    """A dt: value that pint cannot parse should yield a ValueError mentioning the step."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: bad_dt
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "nonsense", value: "1A"}
+"""
+    p = tmp_path / "bad_dt.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 1" in str(e), f"Expected step index in error, got: {e}"
+        return
+    assert False, "Expected ValueError for unparseable dt duration"
+
+
 # ── Task 4: Engine — hold steps ───────────────────────────────────────────────
 
 def test_hold_basic_ramp_and_hold():

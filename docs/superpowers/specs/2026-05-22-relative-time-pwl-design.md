@@ -42,7 +42,7 @@ Out of scope:
 - Changes to the internal `WaveformStep` model or `engine.py` (deltas resolve to
   absolute `t` at parse time).
 - Changes to `export_csv` or `export_plecs` (their formats are inherently absolute).
-- Negative deltas, non-monotonic time (rejected at parse time).
+- Negative relative deltas (rejected at parse time). Decreasing absolute `t:` timestamps are not rejected at parse time; the engine pushes conflicting breakpoints forward with a warning.
 
 ## Input syntax
 

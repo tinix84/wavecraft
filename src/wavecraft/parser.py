@@ -113,7 +113,16 @@ def parse_yaml(path: str | Path) -> WaveformSpec:
                     )
                 t = prev_t + delta
             else:
-                t = parse_quantity(t_raw).to('second').magnitude
+                try:
+                    t = parse_quantity(t_raw).to('second').magnitude
+                except Exception as e:
+                    raise ValueError(
+                        f"Step {i}: cannot parse {t_raw!r} as a time: {e}"
+                    ) from e
+            if 'value' not in step_raw:
+                raise ValueError(
+                    f"Step {i}: 't' step requires a 'value' key."
+                )
             value = _resolve_value(str(step_raw['value']), nominal_current)
             steps.append(WaveformStep(
                 kind='absolute',
@@ -127,7 +136,12 @@ def parse_yaml(path: str | Path) -> WaveformSpec:
                 raise ValueError(
                     f"Step {i}: 'dt' step requires a 'value' key."
                 )
-            delta = parse_quantity(str(step_raw['dt'])).to('second').magnitude
+            try:
+                delta = parse_quantity(str(step_raw['dt'])).to('second').magnitude
+            except Exception as e:
+                raise ValueError(
+                    f"Step {i}: cannot parse {step_raw['dt']!r} as a duration: {e}"
+                ) from e
             if delta < 0:
                 raise ValueError(
                     f"Step {i}: 'dt' must be non-negative, got {step_raw['dt']!r}."

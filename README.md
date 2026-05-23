@@ -48,7 +48,7 @@ Loading: examples/nvidia_pulse.yaml
 |---|---|
 | `hold: VALUE, for: DURATION` | Ramp to VALUE (using slew), then hold for DURATION |
 | `t: TIME, value: VALUE` | Reach VALUE at absolute timestamp TIME. TIME may be prefixed with `+` to mean "DURATION after the previous absolute timestamp" |
-| `dt: DURATION, value: VALUE` | Reach VALUE at `prev_t + DURATION`, where `prev_t` is the **previous absolute timestamp** (i.e., the most recent `t:` step's time; `hold:` steps do not advance `prev_t`). Equivalent to `t: "+DURATION"` |
+| `dt: DURATION, value: VALUE` | Reach VALUE at `prev_t + DURATION`, where `prev_t` is the **previous absolute timestamp** (i.e., the most recent `t:` or `dt:` step's resolved time; `hold:` steps do not advance `prev_t`). Equivalent to `t: "+DURATION"` |
 | `slew_rate: RATE` | Optional per-step slew override (any step kind above) |
 
 **VALUE** accepts: `"240A"`, `"175%"` (of `nominal_current`), `"24mA"`  
