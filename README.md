@@ -47,8 +47,9 @@ Loading: examples/nvidia_pulse.yaml
 | Keys | Meaning |
 |---|---|
 | `hold: VALUE, for: DURATION` | Ramp to VALUE (using slew), then hold for DURATION |
-| `t: TIME, value: VALUE` | Reach VALUE at absolute timestamp TIME |
-| `slew_rate: RATE` | Optional per-step slew override (either step kind) |
+| `t: TIME, value: VALUE` | Reach VALUE at absolute timestamp TIME. TIME may be prefixed with `+` to mean "DURATION after the previous absolute timestamp" |
+| `dt: DURATION, value: VALUE` | Reach VALUE at `prev_t + DURATION`, where `prev_t` is the **previous absolute timestamp** (i.e., the most recent `t:` or `dt:` step's resolved time; `hold:` steps do not advance `prev_t`). Equivalent to `t: "+DURATION"` |
+| `slew_rate: RATE` | Optional per-step slew override (any step kind above) |
 
 **VALUE** accepts: `"240A"`, `"175%"` (of `nominal_current`), `"24mA"`  
 **TIME / DURATION** accept: `"500us"`, `"5ms"`, `"1s"`, `"100ns"`
@@ -77,16 +78,21 @@ steps:
 | LTspice PWL FILE= | `_ltspice.pwl` | Two-column `time(s) current(A)` data file |
 | PLECS | `_plecs.py` | `x` and `f_x` vectors for a 1D Lookup Table block |
 
+> **Note:** The LTspice `PWL FILE=` output (`_ltspice.pwl`) now emits each row after the first as a `+tdelta` relative-time entry. LTspice accepts this format natively and it is more readable for long waveforms. If you have external tooling that parsed the previous absolute-timestamp two-column format, update it accordingly. The inline `PWL(...)` output (`.pwl`) keeps absolute timestamps by default for ngspice compatibility; pass `--relative-time` to switch it.
+
 ## CLI reference
 
 ```
-wavecraft INPUT [--out-dir DIR] [--dt TIME] [--formats LIST] [--plot]
+wavecraft INPUT [--out-dir DIR] [--dt TIME] [--formats LIST] [--plot] [--relative-time]
 
-  INPUT           Path to .yaml waveform definition
-  --out-dir DIR   Output directory (default: same dir as input)
-  --dt TIME       CSV resampling period override, e.g. 100ns
-  --formats LIST  Comma-separated: csv,pwl,plecs,ltspice (default: all four)
-  --plot          Show matplotlib preview (requires matplotlib)
+  INPUT             Path to .yaml waveform definition
+  --out-dir DIR     Output directory (default: same dir as input)
+  --dt TIME         CSV resampling period override, e.g. 100ns
+  --formats LIST    Comma-separated: csv,pwl,plecs,ltspice (default: all four)
+  --plot            Show matplotlib preview (requires matplotlib)
+  --relative-time   Emit '+tdelta' times in inline PWL output (LTspice-only;
+                    ngspice does not accept this form). The LTspice FILE= output
+                    (--formats ltspice) always uses relative deltas.
 ```
 
 ## Python API

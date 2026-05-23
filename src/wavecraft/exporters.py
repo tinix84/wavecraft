@@ -29,8 +29,13 @@ def export_pwl(
     output_path: str | Path,
     source_name: str = 'I_LOAD',
     spec: WaveformSpec | None = None,
+    relative_time: bool = False,
 ) -> None:
-    """Write breakpoints as a SPICE PWL current source definition."""
+    """Write breakpoints as a SPICE PWL current source definition.
+
+    When relative_time=True, non-first breakpoints are emitted with a '+' prefix
+    on the time column (LTspice-only shorthand; ngspice does not accept it).
+    """
     from datetime import date
     with open(output_path, 'w') as f:
         f.write(f"* Generated: {date.today()}\n")
@@ -44,8 +49,15 @@ def export_pwl(
                 parts.append(f"resolution: {spec.resolution*1e6:.6g}us")
             f.write(f"* {' | '.join(parts)}\n")
         f.write(f"{source_name} 0 1 PWL(\n")
+        prev_t: float | None = None
         for t_s, amp_a in bps:
-            f.write(f"+  {t_s * 1e6:14.6f}u  {amp_a:14.6f}\n")
+            if relative_time and prev_t is not None:
+                delta_us = (t_s - prev_t) * 1e6
+                time_token = f"+{delta_us:.6f}"
+                f.write(f"+  {time_token:>14}u  {amp_a:14.6f}\n")
+            else:
+                f.write(f"+  {t_s * 1e6:14.6f}u  {amp_a:14.6f}\n")
+            prev_t = t_s
         f.write("+ )\n")
 
 
@@ -54,7 +66,11 @@ def export_ltspice_pwl(
     output_path: str | Path,
     spec: WaveformSpec | None = None,
 ) -> None:
-    """Write breakpoints as an LTspice PWL FILE= compatible data file."""
+    """Write breakpoints as an LTspice PWL FILE= compatible data file.
+
+    First row is the absolute anchor; subsequent rows use LTspice's '+tdelta'
+    relative-time shorthand.
+    """
     from datetime import date
     with open(output_path, 'w') as f:
         f.write(f"; Generated: {date.today()}\n")
@@ -66,8 +82,14 @@ def export_ltspice_pwl(
                 parts.append(f"slew: {spec.slew_rate/1e6:.6g}A/us")
             f.write(f"; {' | '.join(parts)}\n")
         f.write("; time(s)              current(A)\n")
+        prev_t: float | None = None
         for t_s, amp_a in bps:
-            f.write(f"  {t_s:<20.10g}  {amp_a:.10g}\n")
+            if prev_t is None:
+                f.write(f"  {t_s:<20.10g}  {amp_a:.10g}\n")
+            else:
+                delta = t_s - prev_t
+                f.write(f"  +{delta:<19.10g}  {amp_a:.10g}\n")
+            prev_t = t_s
 
 
 def export_plecs(

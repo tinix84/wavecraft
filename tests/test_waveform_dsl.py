@@ -160,6 +160,249 @@ def test_parse_yaml_absolute_timestamp():
     assert abs(s.t - 1.0) < 1e-15
     assert abs(s.value - 0.0) < 1e-9
 
+# ── Relative time-delta syntax ────────────────────────────────────────────────
+
+def test_parse_yaml_t_plus_prefix(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: rel_t_test
+steps:
+  - {t: "0us", value: "0A"}
+  - {t: "+1ms", value: "1A"}
+  - {t: "+1ms", value: "0A"}
+"""
+    p = tmp_path / "rel_t.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert len(spec.steps) == 3
+    assert spec.steps[0].kind == 'absolute' and abs(spec.steps[0].t - 0.0) < 1e-15
+    assert spec.steps[1].kind == 'absolute' and abs(spec.steps[1].t - 1e-3) < 1e-15
+    assert spec.steps[2].kind == 'absolute' and abs(spec.steps[2].t - 2e-3) < 1e-15
+    assert abs(spec.steps[1].value - 1.0) < 1e-12
+
+
+def test_parse_yaml_t_plus_first_step(tmp_path):
+    """A leading +DUR step anchors against prev_t=0."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: rel_first
+steps:
+  - {t: "+500us", value: "1A"}
+  - {t: "+500us", value: "0A"}
+"""
+    p = tmp_path / "rel_first.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert abs(spec.steps[0].t - 500e-6) < 1e-15
+    assert abs(spec.steps[1].t - 1000e-6) < 1e-15
+
+
+def test_parse_yaml_t_plus_after_hold(tmp_path):
+    """A hold step must not advance prev_t; the next +DUR anchors at the prior absolute t."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: hold_then_rel
+steps:
+  - {t: "0us", value: "0A"}
+  - {hold: "10A", for: "500us"}
+  - {t: "+1ms", value: "0A"}
+"""
+    p = tmp_path / "hold_then_rel.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    # prev_t after step 0 = 0; hold leaves prev_t at 0; so step 2's resolved t = 0 + 1ms.
+    assert abs(spec.steps[2].t - 1e-3) < 1e-15
+
+
+def test_parse_yaml_dt_key(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: dt_test
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "1ms", value: "1A"}
+  - {dt: "1ms", value: "0A"}
+"""
+    p = tmp_path / "dt.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert len(spec.steps) == 3
+    assert spec.steps[1].kind == 'absolute' and abs(spec.steps[1].t - 1e-3) < 1e-15
+    assert spec.steps[2].kind == 'absolute' and abs(spec.steps[2].t - 2e-3) < 1e-15
+
+
+def test_parse_yaml_dt_equivalent_to_t_plus(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_a = "name: a\nsteps:\n  - {t: '0us', value: '0A'}\n  - {t: '+1ms', value: '1A'}\n"
+    yaml_b = "name: b\nsteps:\n  - {t: '0us', value: '0A'}\n  - {dt: '1ms', value: '1A'}\n"
+    pa = tmp_path / "a.yaml"; pa.write_text(yaml_a)
+    pb = tmp_path / "b.yaml"; pb.write_text(yaml_b)
+    sa = parse_yaml(pa); sb = parse_yaml(pb)
+    assert sa.steps[1].t == sb.steps[1].t
+    assert sa.steps[1].value == sb.steps[1].value
+    assert sa.steps[1].kind == sb.steps[1].kind
+
+
+def test_parse_yaml_dt_first_step(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: dt_first
+steps:
+  - {dt: "1ms", value: "1A"}
+"""
+    p = tmp_path / "dtf.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert spec.steps[0].kind == 'absolute'
+    assert abs(spec.steps[0].t - 1e-3) < 1e-15
+
+
+def test_parse_yaml_negative_dt_raises(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: neg
+steps:
+  - {t: "1ms", value: "0A"}
+  - {dt: "-1ms", value: "1A"}
+"""
+    p = tmp_path / "neg.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 1" in str(e)
+        return
+    assert False, "Expected ValueError for negative dt"
+
+
+def test_parse_yaml_negative_t_plus_raises(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: neg2
+steps:
+  - {t: "1ms", value: "0A"}
+  - {t: "+-1ms", value: "1A"}
+"""
+    p = tmp_path / "neg2.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 1" in str(e)
+        return
+    assert False, "Expected ValueError for negative t+ delta"
+
+
+def test_parse_yaml_t_and_dt_conflict_raises(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: conflict
+steps:
+  - {t: "1ms", dt: "1ms", value: "0A"}
+"""
+    p = tmp_path / "conflict.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 0" in str(e)
+        return
+    assert False, "Expected ValueError for t+dt on same step"
+
+
+def test_parse_yaml_dt_without_value_raises(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: noval
+steps:
+  - {dt: "1ms"}
+"""
+    p = tmp_path / "noval.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 0" in str(e)
+        return
+    assert False, "Expected ValueError for dt without value"
+
+
+def test_parse_yaml_dt_with_per_step_slew_rate(tmp_path):
+    """A dt: step still honors a per-step slew_rate override."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: dt_slew
+slew_rate: "6A/us"
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "1ms", value: "100A", slew_rate: "3A/us"}
+"""
+    p = tmp_path / "dt_slew.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert spec.steps[1].kind == 'absolute'
+    assert abs(spec.steps[1].t - 1e-3) < 1e-15
+    assert spec.steps[1].slew_rate is not None
+    assert abs(spec.steps[1].slew_rate - 3e6) < 1.0
+
+
+def test_parse_yaml_t_plus_unparseable_raises_with_step_index(tmp_path):
+    """A '+'-prefixed t: that pint cannot parse should yield a ValueError mentioning the step."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: bad_plus
+steps:
+  - {t: "0us", value: "0A"}
+  - {t: "+nonsense", value: "1A"}
+"""
+    p = tmp_path / "bad.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 1" in str(e)
+        return
+    assert False, "Expected ValueError for unparseable '+' duration"
+
+
+def test_parse_yaml_t_step_missing_value_raises(tmp_path):
+    """A 't' step without a 'value' key should raise ValueError mentioning the step index."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: noval_t
+steps:
+  - {t: "0us", value: "0A"}
+  - {t: "1ms"}
+"""
+    p = tmp_path / "noval_t.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 1" in str(e), f"Expected step index in error, got: {e}"
+        return
+    assert False, "Expected ValueError for t step without value"
+
+
+def test_parse_yaml_dt_unparseable_raises_with_step_index(tmp_path):
+    """A dt: value that pint cannot parse should yield a ValueError mentioning the step."""
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: bad_dt
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "nonsense", value: "1A"}
+"""
+    p = tmp_path / "bad_dt.yaml"
+    p.write_text(yaml_text)
+    try:
+        parse_yaml(p)
+    except ValueError as e:
+        assert "Step 1" in str(e), f"Expected step index in error, got: {e}"
+        return
+    assert False, "Expected ValueError for unparseable dt duration"
+
+
 # ── Task 4: Engine — hold steps ───────────────────────────────────────────────
 
 def test_hold_basic_ramp_and_hold():
@@ -427,11 +670,15 @@ def test_export_ltspice_pwl_format(tmp_path):
     text = out.read_text()
     assert 'I_LOAD' not in text          # no SPICE element line
     assert 'PWL(' not in text            # no inline PWL syntax
-    assert '+' not in text               # no continuation lines
+    assert '+ )' not in text             # no SPICE PWL continuation close
     assert ';' in text                   # comment header present
     # each breakpoint appears as a data line (non-comment, non-empty)
     data_lines = [l for l in text.splitlines() if l.strip() and not l.strip().startswith(';')]
     assert len(data_lines) == 3
+    # first row is absolute; remaining rows are '+'-prefixed relative deltas
+    assert not data_lines[0].lstrip().startswith('+'), "first row must be absolute"
+    for ln in data_lines[1:]:
+        assert ln.lstrip().startswith('+'), f"non-first row must start with '+': {ln!r}"
 
 def test_export_ltspice_pwl_time_in_seconds(tmp_path):
     """LTspice file times must be plain seconds (no 'u' suffix on data lines)."""
@@ -446,6 +693,140 @@ def test_export_ltspice_pwl_time_in_seconds(tmp_path):
     # 72µs = 7.2e-05 s — value must round-trip to the correct float
     first_t = float(data_lines[0].split()[0])
     assert abs(first_t - 72e-6) < 1e-12
+
+# ── Relative-time exporters ──────────────────────────────────────────────────
+
+def test_export_ltspice_pwl_emits_relative_deltas(tmp_path):
+    from wavecraft import export_ltspice_pwl
+    bps = [(0.0, 0.0), (0.0005, 420.0), (0.0055, 360.0)]
+    out = tmp_path / "rel.pwl"
+    export_ltspice_pwl(bps, out)
+    text = out.read_text()
+    # Drop comment lines and the header
+    data_lines = [
+        ln for ln in text.splitlines()
+        if ln.strip() and not ln.lstrip().startswith(';')
+    ]
+    assert len(data_lines) == 3, data_lines
+    # First row: absolute
+    first_cols = data_lines[0].split()
+    assert first_cols[0] == "0"
+    assert first_cols[1] == "0"
+    # Subsequent rows: '+'-prefixed
+    second_cols = data_lines[1].split()
+    assert second_cols[0].startswith("+"), second_cols
+    assert abs(float(second_cols[0][1:]) - 0.0005) < 1e-15
+    assert abs(float(second_cols[1]) - 420.0) < 1e-9
+    third_cols = data_lines[2].split()
+    assert third_cols[0].startswith("+"), third_cols
+    assert abs(float(third_cols[0][1:]) - 0.005) < 1e-15
+
+
+def test_export_pwl_default_is_absolute(tmp_path):
+    from wavecraft import export_pwl
+    bps = [(0.0, 0.0), (0.0005, 420.0), (0.0055, 360.0)]
+    out = tmp_path / "abs.pwl"
+    export_pwl(bps, out)
+    text = out.read_text()
+    # SPICE PWL continuation lines start with '+' in column 0.
+    # Strip that and look at the time tokens that follow.
+    body = [ln[1:].lstrip() for ln in text.splitlines() if ln.startswith('+')]
+    data = [ln for ln in body if ln and ln[0].isdigit()]
+    assert len(data) == 3
+    for ln in data:
+        first = ln.split()[0]
+        assert not first.startswith('+'), f"unexpected '+' prefix: {first}"
+
+
+def test_export_pwl_relative_time_true(tmp_path):
+    from wavecraft import export_pwl
+    bps = [(0.0, 0.0), (0.0005, 420.0), (0.0055, 360.0)]
+    out = tmp_path / "rel.pwl"
+    export_pwl(bps, out, relative_time=True)
+    text = out.read_text()
+    body = [ln[1:].lstrip() for ln in text.splitlines() if ln.startswith('+')]
+    data = [ln for ln in body if ln and (ln[0].isdigit() or ln[0] == '+')]
+    assert len(data) == 3
+    # First row absolute (no '+' on time)
+    assert not data[0].split()[0].startswith('+')
+    # Subsequent rows have '+' prefix
+    assert data[1].split()[0].startswith('+')
+    assert data[2].split()[0].startswith('+')
+    # Delta from (0.0005 - 0) = 500us; from (0.0055 - 0.0005) = 5000us
+    d1 = float(data[1].split()[0].rstrip('u').lstrip('+'))
+    d2 = float(data[2].split()[0].rstrip('u').lstrip('+'))
+    assert abs(d1 - 500.0) < 1e-6
+    assert abs(d2 - 5000.0) < 1e-6
+
+
+def test_export_pwl_relative_time_aligns_with_absolute(tmp_path):
+    """When relative_time=True, the 'u' suffix lands at the same column in
+    every row — first row (absolute anchor) and all subsequent relative rows."""
+    from wavecraft import export_pwl
+    bps = [(0.0, 0.0), (0.0005, 420.0), (0.0055, 360.0)]
+    out = tmp_path / "align.pwl"
+    export_pwl(bps, out, relative_time=True)
+    text = out.read_text()
+    # SPICE continuation lines start with '+' in column 0; the data lines we want
+    # have a numeric (or '+'-prefixed numeric) token followed by 'u'.
+    data_lines = [
+        ln for ln in text.splitlines()
+        if ln.startswith('+') and 'u' in ln and 'PWL' not in ln and ')' not in ln
+    ]
+    assert len(data_lines) == 3, data_lines
+    u_cols = [ln.index('u') for ln in data_lines]
+    assert len(set(u_cols)) == 1, f"'u' columns not aligned: {u_cols}"
+
+
+def test_cli_relative_time_flag(tmp_path):
+    from wavecraft.cli import main
+    yaml_text = """
+name: cli_rel_test
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "1ms", value: "1A"}
+"""
+    yp = tmp_path / "cli_rel.yaml"
+    yp.write_text(yaml_text)
+    main([str(yp), "--out-dir", str(tmp_path), "--formats", "pwl", "--relative-time"])
+    out = tmp_path / "cli_rel_test.pwl"
+    assert out.exists()
+    text = out.read_text()
+    # Second data row should carry a '+' prefix on the time column.
+    body = [ln[1:].lstrip() for ln in text.splitlines() if ln.startswith('+')]
+    data = [ln for ln in body if ln and (ln[0].isdigit() or ln[0] == '+')]
+    assert len(data) == 2
+    assert data[1].split()[0].startswith('+'), data[1]
+
+
+def test_ltspice_article_example_roundtrip(tmp_path):
+    """Reproduce PWL(0 0 +1m 1 +1m 1 +1m 0) from the Analog article."""
+    from wavecraft import parse_yaml, build_breakpoints, export_pwl
+    yaml_text = """
+name: ltspice_article
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "1ms", value: "1A"}
+  - {dt: "1ms", value: "1A"}
+  - {dt: "1ms", value: "0A"}
+"""
+    yp = tmp_path / "article.yaml"
+    yp.write_text(yaml_text)
+    spec = parse_yaml(yp)
+    bps = build_breakpoints(spec)
+    # Expect exactly four breakpoints at 0, 1ms, 2ms, 3ms with the listed values.
+    expected = [(0.0, 0.0), (1e-3, 1.0), (2e-3, 1.0), (3e-3, 0.0)]
+    assert len(bps) == len(expected), bps
+    for got, exp in zip(bps, expected):
+        assert abs(got[0] - exp[0]) < 1e-12, (got, exp)
+        assert abs(got[1] - exp[1]) < 1e-12, (got, exp)
+
+    out = tmp_path / "article.pwl"
+    export_pwl(bps, out, relative_time=True)
+    text = out.read_text()
+    # Three relative deltas of 1000.000000 microseconds.
+    assert text.count("+1000.000000u") == 3, text
+
 
 if __name__ == '__main__':
     print('=== Task 1: Data model ===')
