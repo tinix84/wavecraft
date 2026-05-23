@@ -9,7 +9,13 @@ from .models import WaveformSpec
 from .parser import parse_quantity, parse_yaml
 
 
-def _run(spec: WaveformSpec, out_dir: Path, formats: list[str], dt_override: float | None) -> list[tuple[float, float]]:
+def _run(
+    spec: WaveformSpec,
+    out_dir: Path,
+    formats: list[str],
+    dt_override: float | None,
+    relative_time: bool = False,
+) -> list[tuple[float, float]]:
     bps = build_breakpoints(spec)
     name = spec.name
 
@@ -36,7 +42,7 @@ def _run(spec: WaveformSpec, out_dir: Path, formats: list[str], dt_override: flo
 
     if 'pwl' in formats:
         path = out_dir / f"{name}.pwl"
-        export_pwl(bps, path, source_name='I_LOAD', spec=spec)
+        export_pwl(bps, path, source_name='I_LOAD', spec=spec, relative_time=relative_time)
         print(f"  Saved PWL   : {path}")
 
     if 'plecs' in formats:
@@ -65,6 +71,9 @@ def main(argv: list[str] | None = None) -> None:
                         help='Comma-separated: csv,pwl,plecs,ltspice (default: all four)')
     parser.add_argument('--plot', action='store_true',
                         help='Show matplotlib preview (requires matplotlib)')
+    parser.add_argument('--relative-time', action='store_true',
+                        help='Emit relative +tdelta times in the inline PWL output '
+                             '(LTspice-only; ngspice does not accept this form)')
     args = parser.parse_args(argv)
 
     input_path = Path(args.input).resolve()
@@ -83,7 +92,7 @@ def main(argv: list[str] | None = None) -> None:
     print(f"  Steps       : {len(spec.steps)}")
     print()
 
-    bps = _run(spec, out_dir, formats, dt_override)
+    bps = _run(spec, out_dir, formats, dt_override, relative_time=args.relative_time)
 
     if args.plot:
         try:

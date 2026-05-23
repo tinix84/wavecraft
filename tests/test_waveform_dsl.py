@@ -702,6 +702,27 @@ def test_export_pwl_relative_time_aligns_with_absolute(tmp_path):
     assert len(set(u_cols)) == 1, f"'u' columns not aligned: {u_cols}"
 
 
+def test_cli_relative_time_flag(tmp_path):
+    from wavecraft.cli import main
+    yaml_text = """
+name: cli_rel_test
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "1ms", value: "1A"}
+"""
+    yp = tmp_path / "cli_rel.yaml"
+    yp.write_text(yaml_text)
+    main([str(yp), "--out-dir", str(tmp_path), "--formats", "pwl", "--relative-time"])
+    out = tmp_path / "cli_rel_test.pwl"
+    assert out.exists()
+    text = out.read_text()
+    # Second data row should carry a '+' prefix on the time column.
+    body = [ln[1:].lstrip() for ln in text.splitlines() if ln.startswith('+')]
+    data = [ln for ln in body if ln and (ln[0].isdigit() or ln[0] == '+')]
+    assert len(data) == 2
+    assert data[1].split()[0].startswith('+'), data[1]
+
+
 if __name__ == '__main__':
     print('=== Task 1: Data model ===')
     run_test('WaveformStep hold defaults', test_waveformstep_hold_defaults)
