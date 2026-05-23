@@ -41,25 +41,23 @@ def _cell_lines(n: int, inst_suffix: str, pwl: str, label: str) -> list[str]:
     """
     ASC lines for one sub-circuit cell at x_off = n * CELL_WIDTH.
 
-    Topology cloned from examples/fig3_tracking.asc:
-      Vsrc(48V) --- L2(22nH) --- node --- L1(22nH) --- I_load(PWL)
-                                  |
-                                C1(1u)
-                                  |
-                                 GND
-    All x-coordinates from the original are shifted by x_off = n * CELL_WIDTH.
+    Simplified topology (no inductors):
+      Vsrc(48V) --- node --- I_load(PWL)
+                    |
+                   C1(1u)
+                    |
+                   GND
+
+    V+ is wired directly to the C1/I_load node via a single horizontal rail.
     """
     x = n * CELL_WIDTH
     out = []
 
-    # Wires (from fig3_tracking.asc, x-shifted)
+    # Single horizontal rail: V+ → C1 node → I_load top (no inductors)
     out += [
-        f"WIRE {x-112} 128 {x-176} 128",
-        f"WIRE {x+64} 128 {x-32} 128",
-        f"WIRE {x+112} 128 {x+64} 128",
-        f"WIRE {x+272} 128 {x+192} 128",
-        f"WIRE {x+64} 144 {x+64} 128",
-        f"WIRE {x+272} 144 {x+272} 128",
+        f"WIRE {x-176} 128 {x+272} 128",  # V+ to I_load top
+        f"WIRE {x+64} 144 {x+64} 128",    # C1 top pin to rail
+        f"WIRE {x+272} 144 {x+272} 128",  # I_load top to rail
     ]
 
     # Ground flags
@@ -67,16 +65,6 @@ def _cell_lines(n: int, inst_suffix: str, pwl: str, label: str) -> list[str]:
         f"FLAG {x-176} 208 0",
         f"FLAG {x+272} 224 0",
         f"FLAG {x+64} 208 0",
-    ]
-
-    # L1 (load-side inductor)
-    out += [
-        f"SYMBOL ind {x+96} 144 R270",
-        "WINDOW 0 32 56 VTop 2",
-        "WINDOW 3 5 56 VBottom 2",
-        f"SYMATTR InstName L1_{inst_suffix}",
-        "SYMATTR Value 22n",
-        "SYMATTR SpiceLine Rser=1m",
     ]
 
     # C1 (decoupling capacitor)
@@ -100,16 +88,6 @@ def _cell_lines(n: int, inst_suffix: str, pwl: str, label: str) -> list[str]:
         "WINDOW 39 0 0 Left 0",
         f"SYMATTR InstName V{n+1}",
         "SYMATTR Value 48",
-    ]
-
-    # L2 (source-side inductor)
-    out += [
-        f"SYMBOL ind {x-128} 144 R270",
-        "WINDOW 0 32 56 VTop 2",
-        "WINDOW 3 5 56 VBottom 2",
-        f"SYMATTR InstName L2_{inst_suffix}",
-        "SYMATTR Value 22n",
-        "SYMATTR SpiceLine Rser=1m",
     ]
 
     # Profile label below cell
@@ -152,7 +130,7 @@ def main() -> None:
         f.write(f"SHEET 1 {sheet_w} 680\n")
         for line in all_lines:
             f.write(line + "\n")
-        f.write(f"TEXT -64 280 Left 2 !.tran {tran_stop:.6g}\n")
+        f.write(f"TEXT -64 280 Left 2 !.tran 0 {tran_stop:.6g} 0 4u\n")
 
     print(f"\nWritten: {OUT_FILE}")
     print(f".tran stop: {tran_stop * 1e3:.3f} ms")
