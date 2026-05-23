@@ -98,9 +98,6 @@ def parse_yaml(path: str | Path) -> WaveformSpec:
             if t_raw.startswith('+'):
                 delta = parse_quantity(t_raw[1:]).to('second').magnitude
                 t = prev_t + delta
-            elif re.fullmatch(r'[+-]?\d+\.?\d*(?:[eE][+-]?\d+)?', t_raw):
-                # bare number with no unit — treat as seconds
-                t = float(t_raw)
             else:
                 t = parse_quantity(t_raw).to('second').magnitude
             value = _resolve_value(str(step_raw['value']), nominal_current)

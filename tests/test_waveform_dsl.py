@@ -167,7 +167,7 @@ def test_parse_yaml_t_plus_prefix(tmp_path):
     yaml_text = """
 name: rel_t_test
 steps:
-  - {t: "0", value: "0A"}
+  - {t: "0us", value: "0A"}
   - {t: "+1ms", value: "1A"}
   - {t: "+1ms", value: "0A"}
 """
