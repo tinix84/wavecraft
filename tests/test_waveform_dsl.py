@@ -160,6 +160,27 @@ def test_parse_yaml_absolute_timestamp():
     assert abs(s.t - 1.0) < 1e-15
     assert abs(s.value - 0.0) < 1e-9
 
+# ── Relative time-delta syntax ────────────────────────────────────────────────
+
+def test_parse_yaml_t_plus_prefix(tmp_path):
+    from wavecraft import parse_yaml
+    yaml_text = """
+name: rel_t_test
+steps:
+  - {t: "0", value: "0A"}
+  - {t: "+1ms", value: "1A"}
+  - {t: "+1ms", value: "0A"}
+"""
+    p = tmp_path / "rel_t.yaml"
+    p.write_text(yaml_text)
+    spec = parse_yaml(p)
+    assert len(spec.steps) == 3
+    assert spec.steps[0].kind == 'absolute' and abs(spec.steps[0].t - 0.0) < 1e-15
+    assert spec.steps[1].kind == 'absolute' and abs(spec.steps[1].t - 1e-3) < 1e-15
+    assert spec.steps[2].kind == 'absolute' and abs(spec.steps[2].t - 2e-3) < 1e-15
+    assert abs(spec.steps[1].value - 1.0) < 1e-12
+
+
 # ── Task 4: Engine — hold steps ───────────────────────────────────────────────
 
 def test_hold_basic_ramp_and_hold():

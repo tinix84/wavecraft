@@ -76,6 +76,7 @@ def parse_yaml(path: str | Path) -> WaveformSpec:
         resolution = parse_quantity(raw['resolution']).to('second').magnitude
 
     steps: list[WaveformStep] = []
+    prev_t: float = 0.0
     for i, step_raw in enumerate(raw.get('steps', [])):
         step_slew: float | None = None
         if 'slew_rate' in step_raw:
@@ -90,8 +91,18 @@ def parse_yaml(path: str | Path) -> WaveformSpec:
                 hold_duration=duration,
                 slew_rate=step_slew,
             ))
+            # prev_t intentionally not advanced — hold steps don't have an absolute t
+            # at parse time; the engine resolves them later.
         elif 't' in step_raw:
-            t = parse_quantity(step_raw['t']).to('second').magnitude
+            t_raw = str(step_raw['t']).strip()
+            if t_raw.startswith('+'):
+                delta = parse_quantity(t_raw[1:]).to('second').magnitude
+                t = prev_t + delta
+            elif re.fullmatch(r'[+-]?\d+\.?\d*(?:[eE][+-]?\d+)?', t_raw):
+                # bare number with no unit — treat as seconds
+                t = float(t_raw)
+            else:
+                t = parse_quantity(t_raw).to('second').magnitude
             value = _resolve_value(str(step_raw['value']), nominal_current)
             steps.append(WaveformStep(
                 kind='absolute',
@@ -99,6 +110,7 @@ def parse_yaml(path: str | Path) -> WaveformSpec:
                 value=value,
                 slew_rate=step_slew,
             ))
+            prev_t = t
         else:
             raise ValueError(
                 f"Step {i}: must have 'hold'+'for' or 't'+'value' keys. "
