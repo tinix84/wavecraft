@@ -54,7 +54,7 @@ def export_pwl(
             if relative_time and prev_t is not None:
                 delta_us = (t_s - prev_t) * 1e6
                 time_token = f"+{delta_us:.6f}"
-                f.write(f"+ {time_token:>14}u  {amp_a:14.6f}\n")
+                f.write(f"+  {time_token:>14}u  {amp_a:14.6f}\n")
             else:
                 f.write(f"+  {t_s * 1e6:14.6f}u  {amp_a:14.6f}\n")
             prev_t = t_s

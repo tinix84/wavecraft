@@ -683,6 +683,25 @@ def test_export_pwl_relative_time_true(tmp_path):
     assert abs(d2 - 5000.0) < 1e-6
 
 
+def test_export_pwl_relative_time_aligns_with_absolute(tmp_path):
+    """When relative_time=True, the 'u' suffix lands at the same column in
+    every row — first row (absolute anchor) and all subsequent relative rows."""
+    from wavecraft import export_pwl
+    bps = [(0.0, 0.0), (0.0005, 420.0), (0.0055, 360.0)]
+    out = tmp_path / "align.pwl"
+    export_pwl(bps, out, relative_time=True)
+    text = out.read_text()
+    # SPICE continuation lines start with '+' in column 0; the data lines we want
+    # have a numeric (or '+'-prefixed numeric) token followed by 'u'.
+    data_lines = [
+        ln for ln in text.splitlines()
+        if ln.startswith('+') and 'u' in ln and 'PWL' not in ln and ')' not in ln
+    ]
+    assert len(data_lines) == 3, data_lines
+    u_cols = [ln.index('u') for ln in data_lines]
+    assert len(set(u_cols)) == 1, f"'u' columns not aligned: {u_cols}"
+
+
 if __name__ == '__main__':
     print('=== Task 1: Data model ===')
     run_test('WaveformStep hold defaults', test_waveformstep_hold_defaults)
