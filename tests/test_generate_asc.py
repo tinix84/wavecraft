@@ -43,3 +43,12 @@ def test_asc_no_duplicate_instnames():
 def test_asc_contains_tran_directive():
     text = OUT.read_text(encoding='utf-8')
     assert '!.tran' in text
+
+
+def test_validate_asc_exits_zero():
+    validate = ROOT / 'scripts' / 'validate_asc.py'
+    result = subprocess.run(
+        [sys.executable, str(validate)], capture_output=True, text=True,
+        cwd=str(ROOT),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
