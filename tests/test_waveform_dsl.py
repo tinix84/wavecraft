@@ -594,11 +594,15 @@ def test_export_ltspice_pwl_format(tmp_path):
     text = out.read_text()
     assert 'I_LOAD' not in text          # no SPICE element line
     assert 'PWL(' not in text            # no inline PWL syntax
-    assert '+' not in text               # no continuation lines
+    assert '+ )' not in text             # no SPICE PWL continuation close
     assert ';' in text                   # comment header present
     # each breakpoint appears as a data line (non-comment, non-empty)
     data_lines = [l for l in text.splitlines() if l.strip() and not l.strip().startswith(';')]
     assert len(data_lines) == 3
+    # first row is absolute; remaining rows are '+'-prefixed relative deltas
+    assert not data_lines[0].lstrip().startswith('+'), "first row must be absolute"
+    for ln in data_lines[1:]:
+        assert ln.lstrip().startswith('+'), f"non-first row must start with '+': {ln!r}"
 
 def test_export_ltspice_pwl_time_in_seconds(tmp_path):
     """LTspice file times must be plain seconds (no 'u' suffix on data lines)."""
@@ -613,6 +617,34 @@ def test_export_ltspice_pwl_time_in_seconds(tmp_path):
     # 72µs = 7.2e-05 s — value must round-trip to the correct float
     first_t = float(data_lines[0].split()[0])
     assert abs(first_t - 72e-6) < 1e-12
+
+# ── Relative-time exporters ──────────────────────────────────────────────────
+
+def test_export_ltspice_pwl_emits_relative_deltas(tmp_path):
+    from wavecraft import export_ltspice_pwl
+    bps = [(0.0, 0.0), (0.0005, 420.0), (0.0055, 360.0)]
+    out = tmp_path / "rel.pwl"
+    export_ltspice_pwl(bps, out)
+    text = out.read_text()
+    # Drop comment lines and the header
+    data_lines = [
+        ln for ln in text.splitlines()
+        if ln.strip() and not ln.lstrip().startswith(';')
+    ]
+    assert len(data_lines) == 3, data_lines
+    # First row: absolute
+    first_cols = data_lines[0].split()
+    assert first_cols[0] == "0"
+    assert first_cols[1] == "0"
+    # Subsequent rows: '+'-prefixed
+    second_cols = data_lines[1].split()
+    assert second_cols[0].startswith("+"), second_cols
+    assert abs(float(second_cols[0][1:]) - 0.0005) < 1e-15
+    assert abs(float(second_cols[1]) - 420.0) < 1e-9
+    third_cols = data_lines[2].split()
+    assert third_cols[0].startswith("+"), third_cols
+    assert abs(float(third_cols[0][1:]) - 0.005) < 1e-15
+
 
 if __name__ == '__main__':
     print('=== Task 1: Data model ===')

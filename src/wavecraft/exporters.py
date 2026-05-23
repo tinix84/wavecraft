@@ -54,7 +54,11 @@ def export_ltspice_pwl(
     output_path: str | Path,
     spec: WaveformSpec | None = None,
 ) -> None:
-    """Write breakpoints as an LTspice PWL FILE= compatible data file."""
+    """Write breakpoints as an LTspice PWL FILE= compatible data file.
+
+    First row is the absolute anchor; subsequent rows use LTspice's '+tdelta'
+    relative-time shorthand.
+    """
     from datetime import date
     with open(output_path, 'w') as f:
         f.write(f"; Generated: {date.today()}\n")
@@ -66,8 +70,14 @@ def export_ltspice_pwl(
                 parts.append(f"slew: {spec.slew_rate/1e6:.6g}A/us")
             f.write(f"; {' | '.join(parts)}\n")
         f.write("; time(s)              current(A)\n")
+        prev_t: float | None = None
         for t_s, amp_a in bps:
-            f.write(f"  {t_s:<20.10g}  {amp_a:.10g}\n")
+            if prev_t is None:
+                f.write(f"  {t_s:<20.10g}  {amp_a:.10g}\n")
+            else:
+                delta = t_s - prev_t
+                f.write(f"  +{delta:<19.10g}  {amp_a:.10g}\n")
+            prev_t = t_s
 
 
 def export_plecs(
