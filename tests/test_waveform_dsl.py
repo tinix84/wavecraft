@@ -270,7 +270,7 @@ steps:
     try:
         parse_yaml(p)
     except ValueError as e:
-        assert "1" in str(e)  # step index appears
+        assert "Step 1" in str(e)
         return
     assert False, "Expected ValueError for negative dt"
 
@@ -288,7 +288,7 @@ steps:
     try:
         parse_yaml(p)
     except ValueError as e:
-        assert "1" in str(e)
+        assert "Step 1" in str(e)
         return
     assert False, "Expected ValueError for negative t+ delta"
 
@@ -305,7 +305,7 @@ steps:
     try:
         parse_yaml(p)
     except ValueError as e:
-        assert "0" in str(e)
+        assert "Step 0" in str(e)
         return
     assert False, "Expected ValueError for t+dt on same step"
 
@@ -321,10 +321,10 @@ steps:
     p.write_text(yaml_text)
     try:
         parse_yaml(p)
-    except (ValueError, KeyError) as e:
-        assert "0" in str(e) or "value" in str(e).lower()
+    except ValueError as e:
+        assert "Step 0" in str(e)
         return
-    assert False, "Expected error for dt without value"
+    assert False, "Expected ValueError for dt without value"
 
 
 # ── Task 4: Engine — hold steps ───────────────────────────────────────────────
