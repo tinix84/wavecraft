@@ -47,8 +47,9 @@ Loading: examples/nvidia_pulse.yaml
 | Keys | Meaning |
 |---|---|
 | `hold: VALUE, for: DURATION` | Ramp to VALUE (using slew), then hold for DURATION |
-| `t: TIME, value: VALUE` | Reach VALUE at absolute timestamp TIME |
-| `slew_rate: RATE` | Optional per-step slew override (either step kind) |
+| `t: TIME, value: VALUE` | Reach VALUE at absolute timestamp TIME. TIME may be prefixed with `+` to mean "DURATION after the previous step's t" |
+| `dt: DURATION, value: VALUE` | Reach VALUE at `prev_t + DURATION`. Equivalent to `t: "+DURATION"` |
+| `slew_rate: RATE` | Optional per-step slew override (any step kind above) |
 
 **VALUE** accepts: `"240A"`, `"175%"` (of `nominal_current`), `"24mA"`  
 **TIME / DURATION** accept: `"500us"`, `"5ms"`, `"1s"`, `"100ns"`
@@ -80,13 +81,16 @@ steps:
 ## CLI reference
 
 ```
-wavecraft INPUT [--out-dir DIR] [--dt TIME] [--formats LIST] [--plot]
+wavecraft INPUT [--out-dir DIR] [--dt TIME] [--formats LIST] [--plot] [--relative-time]
 
-  INPUT           Path to .yaml waveform definition
-  --out-dir DIR   Output directory (default: same dir as input)
-  --dt TIME       CSV resampling period override, e.g. 100ns
-  --formats LIST  Comma-separated: csv,pwl,plecs,ltspice (default: all four)
-  --plot          Show matplotlib preview (requires matplotlib)
+  INPUT             Path to .yaml waveform definition
+  --out-dir DIR     Output directory (default: same dir as input)
+  --dt TIME         CSV resampling period override, e.g. 100ns
+  --formats LIST    Comma-separated: csv,pwl,plecs,ltspice (default: all four)
+  --plot            Show matplotlib preview (requires matplotlib)
+  --relative-time   Emit '+tdelta' times in inline PWL output (LTspice-only;
+                    ngspice does not accept this form). The LTspice FILE= output
+                    (--formats ltspice) always uses relative deltas.
 ```
 
 ## Python API
