@@ -18,12 +18,12 @@ CELL_WIDTH = 560
 
 
 def _pwl_string(bps: list[tuple[float, float]]) -> str:
-    """Format breakpoints as an LTspice inline PWL value string."""
+    """Format breakpoints as a repeating LTspice PWL value string."""
     tokens = []
     for t_s, amp_a in bps:
         tokens.append(f"{t_s:.10g}")
         tokens.append(f"{amp_a:.6g}")
-    return "PWL(" + " ".join(tokens) + ")"
+    return "PWL REPEAT FOREVER (" + " ".join(tokens) + ") ENDREPEAT"
 
 
 def _cell_lines(n: int, inst_suffix: str, pwl: str, label: str) -> list[str]:
