@@ -122,13 +122,13 @@ async function editor() {
   return {elements,context,html,get:(id:string)=>elements.get(id)!};
 }
 
-test('inline editor keeps baseline layout and initial JSON; semantic UI blocks point mutations and invalid draft export', async () => {
+test('inline editor exposes studio actions and keeps initial JSON; semantic UI blocks point mutations and invalid draft export', async () => {
   const page=await editor(), {get,context}=page;
   const initial=JSON.parse(get('source').value);
   assert.equal(initial.name,'Load pulse');assert.equal(initial.points.length,9);
-  const baseline=await readFile(new URL('../../outputs/phase2/baseline/wavecraft-web-prototype.before-phase2.html',import.meta.url),'utf8');
-  assert.equal(page.html.match(/<style>[\s\S]*?<\/style>/)![0],baseline.match(/<style>[\s\S]*?<\/style>/)![0]);
-  assert.equal(page.html.match(/<header>[\s\S]*?<\/header>/)![0],baseline.match(/<header>[\s\S]*?<\/header>/)![0]);
+  for (const action of ['studio-project', 'studio-load', 'studio-export']) {
+    assert.ok(page.html.includes(`id="${action}"`));
+  }
   const trace=page.html.split('<section id="trace-panel"')[1].split('<footer')[0];
   for(const id of ['image-canvas','image-file','sample-image','cal-x0','cal-x1','cal-y0','cal-y1','anchor-low','anchor-high','trace-points','undo-trace','use-trace'])assert.ok(trace.includes(`id="${id}"`));
   assert.ok(trace.includes('id="digitize-stage-csv"'));

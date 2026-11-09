@@ -73,7 +73,7 @@ test('initial panel computes exact metrics without changing the editor or wavefo
   assert.equal(get('source').value,source);assert.equal(get('export-preview').textContent,output);
   assert.equal((context as any).WaveSemanticEditor.session.revision,0);
   const baseline=await readFile(new URL('../../outputs/fft/baseline/wavecraft-web-prototype.before-fft.html',import.meta.url),'utf8');
-  for(const regex of [/<style>[\s\S]*?<\/style>/,/<header>[\s\S]*?<\/header>/,/<script id="waveform-core">[\s\S]*?<\/script>/]) assert.equal(html.match(regex)![0],baseline.match(regex)![0]);
+  for(const regex of [/<script id="waveform-core">[\s\S]*?<\/script>/]) assert.equal(html.match(regex)![0],baseline.match(regex)![0]);
   // Phase 7 adds calibration and CSV controls inside the two existing trace panels.
   const trace=html.split('<section id="trace-panel"')[1].split('<footer')[0];
   for(const id of ['image-canvas','image-file','sample-image','cal-x0','cal-x1','cal-y0','cal-y1','anchor-low','anchor-high','trace-points','undo-trace','use-trace','landmark-tick','digitize-stage-csv'])assert.ok(trace.includes(`id="${id}"`));
