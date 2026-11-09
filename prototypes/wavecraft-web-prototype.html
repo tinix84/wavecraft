@@ -636,6 +636,7 @@ if(globalThis.WaveSemantic)globalThis.WaveSemantic.mount({sync:()=>sync(true),pr
 })();
 </script>
 <script>globalThis.studioMeasure = globalThis.WaveSemantic.mountMeasurements();</script>
+
 <script>
 document.getElementById('studio-source-width').oninput = event => {
   document.getElementById('editor-layout').style.setProperty('--source-width', event.target.value + '%');
