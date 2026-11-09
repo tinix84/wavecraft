@@ -120,7 +120,8 @@ export function mountMeasurements() {
       }
       mark('line', {x1:x, x2:x, y1:top, y2:bottom, stroke:color, 'stroke-dasharray':'4 3'});
       if (y(value) >= top && y(value) <= bottom) mark('circle', {cx:x, cy:y(value), r:5, fill:color});
-      mark('text', {x:x+3, y:top-3}, index ? 'B' : 'A');
+      mark('rect', {x:x-12,y:top-18,width:24,height:18,rx:4,fill:color});
+      mark('text', {x,y:top-4,'text-anchor':'middle',style:'fill:#0b182d;font-weight:700'}, index ? 'B' : 'A');
       return value;
     });
     const [a,b] = readings;
@@ -129,6 +130,18 @@ export function mountMeasurements() {
       return;
     }
     const dt = times[1].valueAsNumber - times[0].valueAsNumber;
+    const positions = times.map(input => left+(input.valueAsNumber-firstUs)*(right-left)/(lastUs-firstUs));
+    const [x1,x2] = positions.sort((a,b)=>a-b);
+    if (x1>=left && x2<=right && x2-x1>68) {
+      const y = top+34;
+      const bracket = document.createElementNS('http://www.w3.org/2000/svg','path');
+      bracket.setAttribute('d',`M ${x1} ${y} H ${x2} M ${x1+7} ${y-4} L ${x1} ${y} l 7 4 M ${x2-7} ${y-4} L ${x2} ${y} l -7 4`);
+      bracket.setAttribute('stroke','#a3b7cd');bracket.setAttribute('fill','none');bracket.setAttribute('stroke-width','2');
+      const label=document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('x',String((x1+x2)/2));label.setAttribute('y',String(y-7));label.setAttribute('text-anchor','middle');
+      label.textContent=`Δt ${format(dt)} µs`;
+      group.append(bracket,label);
+    }
     const delta = b - a;
     result.textContent = `A ${format(a)} ${unit} · B ${format(b)} ${unit} · Δt ${format(dt)} µs · Δ${unit === 'A' ? 'I' : 'V'} ${format(delta)} ${unit} · Mean slope ${dt ? format(delta/dt)+' '+unit+'/µs' : 'undefined (same time)'}`;
   }
