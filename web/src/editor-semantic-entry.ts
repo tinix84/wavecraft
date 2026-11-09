@@ -1,3 +1,4 @@
+import { mountMeasurements } from './ui/measurement-cursors.ts';
 import { compileYaml, expandFinite } from './semantic/index.ts';
 import type { CompiledWaveform, Diagnostic, Point } from './semantic/index.ts';
 import { previewLegacyMigration } from './semantic/legacy.ts';
@@ -392,6 +393,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
   function draw() {
     if (!active || $('edit-panel').hidden) return;
     if (!session.result) {
+      (globalThis as any).studioMeasure?.();
       $('plot').querySelectorAll(':scope > :not(title):not(desc)').forEach((el:any)=>el.remove());
       $('wave-title').textContent='No applied semantic waveform';
       $('readout').textContent='Apply valid semantic YAML to show a waveform.';
@@ -400,6 +402,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     }
     const compiled = session.result.compiled, detail = localDetail(compiled);
     if (!detail.ok) {
+      (globalThis as any).studioMeasure?.();
       $('plot').querySelectorAll(':scope > :not(title):not(desc)').forEach((el:any)=>el.remove());
       $('wave-title').textContent=session.result.document.name;
       $('readout').textContent='Compiled source applied. Preview unavailable because expansion exceeds its local point budget.';
@@ -415,6 +418,12 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     }
     const scales = drawPoints($('plot'),detail.points,$('plot').clientHeight || 360, compiled.dimension === 'voltage' ? 'Voltage (V)' : 'Current (A)',viewport);
     geometry($('plot'),scales);
+    (globalThis as any).studioMeasure?.({
+      points: detail.points.map(([time, value]) => [time * 1e6, value]),
+      unit: compiled.dimension === 'voltage' ? 'V' : 'A',
+      firstUs: viewport.timeMinS * 1e6, lastUs: viewport.timeMaxS * 1e6,
+      ...plotRect, y: scales.y
+    });
     $('plot-title').textContent = 'Compiled semantic waveform · select owning segment';
     $('plot-desc').textContent = 'Select a corner with a click, Enter, or Space. Edit its owning segment in the inspector. YAML owns the geometry.';
     $('wave-title').textContent = session.result.document.name;
@@ -784,4 +793,4 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
   preview();
 }
 
-if (typeof window !== 'undefined') (globalThis as any).WaveSemantic = {mount: mountSemanticEditor};
+if (typeof window !== 'undefined') (globalThis as any).WaveSemantic = {mount: mountSemanticEditor, mountMeasurements};
