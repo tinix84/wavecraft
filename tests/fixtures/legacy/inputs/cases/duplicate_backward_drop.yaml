@@ -1,0 +1,6 @@
+name: duplicate_backward_drop
+steps:
+  - {t: 0us, value: 0A}
+  - {t: 0us, value: 1A}
+  - {hold: 2A, for: '-1us'}
+  - {t: 2us, value: 3A}

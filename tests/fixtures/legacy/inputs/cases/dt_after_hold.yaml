@@ -1,0 +1,7 @@
+name: dt_after_hold
+steps:
+  - {t: 10us, value: 0A}
+  - {hold: 1A, for: 20us}
+  - {dt: 25us, value: 2A}
+  - {hold: 2A, for: 10us}
+  - {t: '+15us', value: 0A}

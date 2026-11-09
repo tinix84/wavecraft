@@ -1,0 +1,13 @@
+# Fig. 3 mixed: absolute values, per-step slew, absolute timestamp ramp-down
+name: fig3_mixed
+nominal_current: "240A"
+slew_rate: "6A/us"
+resolution: "1us"
+
+steps:
+  - {t: "0us",     value: "0A"}
+  - {hold: "175%", for: "500us"}              # 420A, 6A/us
+  - {hold: "360A",  for: "5ms"}               # absolute 360A
+  - {hold: "125%",  for: "50ms", slew_rate: "3A/us"}  # slow ramp
+  - {hold: "240A",  for: "1000ms"}            # 100% absolute
+  - {t: "1.1s",    value: "0A"}               # ramp-down to 0A, arrives at 1.1s

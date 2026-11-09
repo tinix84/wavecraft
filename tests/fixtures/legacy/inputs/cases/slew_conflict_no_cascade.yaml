@@ -1,0 +1,6 @@
+name: slew_conflict_no_cascade
+slew_rate: 6A/us
+steps:
+  - {t: 0us, value: 0A}
+  - {t: 10us, value: 420A}
+  - {t: 200us, value: 360A}

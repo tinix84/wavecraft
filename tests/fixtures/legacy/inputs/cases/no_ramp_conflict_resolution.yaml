@@ -1,0 +1,6 @@
+name: no_ramp_conflict_resolution
+resolution: 1us
+steps:
+  - {t: 0us, value: 0A}
+  - {hold: 0A, for: 10us}
+  - {t: 5us, value: 0A}

@@ -1,0 +1,8 @@
+# Three 1ms unit pulses defined with relative time deltas.
+# Reproduces the LTspice article example: PWL(0 0 +1m 1 +1m 1 +1m 0)
+name: relative_pulse
+steps:
+  - {t: "0us", value: "0A"}
+  - {dt: "1ms", value: "1A"}
+  - {dt: "1ms", value: "1A"}
+  - {dt: "1ms", value: "0A"}

@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { unzipSync } from 'fflate';
+import { buildArtifact } from '../scripts/build.mjs';
+import { comparePayload, unpackProof } from '../src/proof.ts';
+
+test('release is a single inline IIFE with notices, no external imports, and retained fixture proof', async () => {
+  const built = await buildArtifact({ release: true });
+  const html = await readFile(built.artifactPath, 'utf8');
+  const metadata = JSON.parse(await readFile(path.join(built.directory, 'METADATA.json'), 'utf8'));
+  assert.match(html, /<script>(?:"use strict";)?\(\(\)=>\{/, 'The script must use IIFE format.');
+  assert.doesNotMatch(html, /<script\b[^>]*\bsrc\s*=|<link\b|<iframe\b|<object\b/i, 'The HTML must contain no external asset tags.');
+  assert.doesNotMatch(html, /\bfetch\s*\(|\bimport\s*\(|\bnew\s+(?:WebSocket|Worker)\s*\(|\bserviceWorker\s*\.|\bshowOpenFilePicker\s*\(/, 'The artifact must contain no runtime network or file-system-access calls.');
+  assert.match(html, /connect-src 'none'/);
+  assert.match(html, /THIRD_PARTY_NOTICES/);
+  assert.match(html, /Permission to use, copy, modify/);
+  assert.match(html, /Arjun Barrett/);
+  assert.match(html, /PENDING/);
+  assert.equal(metadata.noExternalAssets, true);
+  assert.deepEqual(metadata.esbuildExternalImports, []);
+  const archive = unzipSync(await readFile(built.releasePath));
+  assert.ok(archive['wavecraft-phase1.html']);
+  assert.ok(archive['THIRD_PARTY_NOTICES.txt']);
+  assert.ok(archive['HUMAN_TEST.md']);
+  const payload = unpackProof(archive['phase1-sample-proof.zip']);
+  assert.deepEqual(comparePayload({ yamlName: 'phase1-sample-bom-crlf.yaml', yaml: archive['phase1-sample-bom-crlf.yaml'], image: { name: 'phase1-pixel.png', mime: 'image/png', bytes: archive['phase1-pixel.png'] } }, payload), { yamlBytes: true, imageBytes: true, namesAndTypes: true });
+  console.log(`Retained release test output: ${built.directory}`);
+});

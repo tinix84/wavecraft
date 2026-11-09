@@ -1,0 +1,5 @@
+name: resolution_fallback
+resolution: 2us
+steps:
+  - {hold: 10A, for: 4us}
+  - {hold: 0A, for: 2us}

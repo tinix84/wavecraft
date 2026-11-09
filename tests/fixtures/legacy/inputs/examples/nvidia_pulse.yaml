@@ -1,0 +1,22 @@
+# Two-pulse digitized waveform — NVIDIA whitepaper figure
+# Time: µs  |  Amplitude: %
+# [1] J. Huntington and M. Tu, "800 VDC Architecture for Next-Generation AI Infrastructure".
+# No slew_rate / resolution: breakpoints define the waveform exactly (pure PWL).
+
+name: nvidia_gpu_pulse
+nominal_current: "100A"
+
+steps:
+  # ── pulse ──────────────────────────────────────────────────────────────────
+  - {t: "0us",       value: "25%"}    # baseline start
+  - {t: "15.5us",   value: "25%"}    # baseline (pre-pulse 1)
+  - {t: "16.0us",   value: "100%"}   # ramp up, intermediate
+  - {t: "18.0us",   value: "180%"}   # peak
+  - {t: "19.us",   value: "150%"}   # step down to hold level
+  - {t: "57.us",   value: "150%"}   # hold
+  - {t: "58us",   value: "100%"}   # step down to 100A
+  - {t: "77us",   value: "100%"}   # hold ~100A
+  - {t: "78us",   value: "25%"}    # return to baseline
+
+  # ── inter-pulse flat ─────────────────────────────────────────────────────────
+  - {t: "128us",  value: "25%"}    # baseline (pre-pulse 2)

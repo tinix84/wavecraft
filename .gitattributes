@@ -1,0 +1,3 @@
+* text=auto eol=lf
+/prototypes/wavecraft-web-prototype.html -text whitespace=cr-at-eol
+tests/fixtures/legacy/inputs/** -text

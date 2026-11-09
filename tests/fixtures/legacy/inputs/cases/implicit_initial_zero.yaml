@@ -1,0 +1,4 @@
+name: implicit_initial_zero
+slew_rate: 2A/us
+steps:
+  - {hold: 6A, for: 2us}

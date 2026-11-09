@@ -1,0 +1,14 @@
+# Fig. 3 — ABB PSU tracking scenario (all percentages)
+# Expected: ramp 0→420A in 70us, cascade down through 360/300/240/24A
+name: fig3_tracking
+nominal_current: "240A"
+slew_rate: "6A/us"
+resolution: "1us"
+
+steps:
+  - {t: "0us",     value: "0A"}
+  - {hold: "175%", for: "500us"}
+  - {hold: "150%", for: "5ms"}
+  - {hold: "125%", for: "50ms"}
+  - {hold: "100%", for: "1000ms"}
+  - {hold: "10%",  for: "500us"}
