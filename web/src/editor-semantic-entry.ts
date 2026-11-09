@@ -1,3 +1,4 @@
+import { mountOverview } from './ui/waveform-overview.ts';
 import { mountFigureExport } from './ui/figure-export.ts';
 import { mountMeasurements } from './ui/measurement-cursors.ts';
 import { compileYaml, expandFinite } from './semantic/index.ts';
@@ -395,6 +396,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     if (!active || $('edit-panel').hidden) return;
     if (!session.result) {
       (globalThis as any).studioMeasure?.();
+      (globalThis as any).studioOverview?.();
       $('plot').querySelectorAll(':scope > :not(title):not(desc)').forEach((el:any)=>el.remove());
       $('wave-title').textContent='No applied semantic waveform';
       $('readout').textContent='Apply valid semantic YAML to show a waveform.';
@@ -404,6 +406,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     const compiled = session.result.compiled, detail = localDetail(compiled);
     if (!detail.ok) {
       (globalThis as any).studioMeasure?.();
+      (globalThis as any).studioOverview?.();
       $('plot').querySelectorAll(':scope > :not(title):not(desc)').forEach((el:any)=>el.remove());
       $('wave-title').textContent=session.result.document.name;
       $('readout').textContent='Compiled source applied. Preview unavailable because expansion exceeds its local point budget.';
@@ -419,8 +422,16 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     }
     const scales = drawPoints($('plot'),detail.points,$('plot').clientHeight || 360, compiled.dimension === 'voltage' ? 'Voltage (V)' : 'Current (A)',viewport);
     geometry($('plot'),scales);
+    const previewPoints = detail.points.map(([time,value]) => [time*1e6,value]);
+    (globalThis as any).studioOverview?.({
+      points:previewPoints, first:viewport.timeMinS*1e6, last:viewport.timeMaxS*1e6,
+      change(first:number,last:number) {
+        viewport = {...viewport,timeMinS:first*1e-6,timeMaxS:last*1e-6};
+        draw();
+      }
+    });
     (globalThis as any).studioMeasure?.({
-      points: detail.points.map(([time, value]) => [time * 1e6, value]),
+      points: previewPoints,
       unit: compiled.dimension === 'voltage' ? 'V' : 'A',
       firstUs: viewport.timeMinS * 1e6, lastUs: viewport.timeMaxS * 1e6,
       ...plotRect, y: scales.y
@@ -794,4 +805,4 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
   preview();
 }
 
-if (typeof window !== 'undefined') (globalThis as any).WaveSemantic = {mount: mountSemanticEditor, mountMeasurements, mountFigureExport};
+if (typeof window !== 'undefined') (globalThis as any).WaveSemantic = {mount: mountSemanticEditor, mountMeasurements, mountFigureExport, mountOverview};
