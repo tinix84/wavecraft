@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {compareCsv} from './phase8_csv.mjs';
+const c={name:'signedV',dimension:'voltage',expected:{points:[[0,2],[.001,-4],[.002,-4],[.003,2]]},stop:.005};
+const valid='time_s,voltage_V\n0,2\n0.001,-4\n0.002,-4\n0.003,2\n';
+test('accepts exact signed voltage corners',()=>assert.equal(compareCsv(c,valid).result,'pass'));
+test('rejects inserted negative excursion',()=>assert.throws(()=>compareCsv(c,valid.replace('0.002,-4','0.0015,-100\n0.002,-4')),/row count/));
+test('rejects wrong dimension and units',()=>assert.throws(()=>compareCsv(c,valid.replace('voltage_V','current_A')),/SI header/));
+test('rejects truncated terminal hold horizon',()=>{const p={name:'periodic',dimension:'current',expected:{points:[[0,0],[.001,2],[.002,0],[.003,0]],period:.003,count:'continuous'},stop:.0025};const csv='time_s,current_A\n0,0\n0.001,2\n0.002,0\n0.0025,0\n';assert.equal(compareCsv(p,csv).result,'pass');assert.throws(()=>compareCsv(p,csv.replace('0.0025,0\n','')),/row count/);});
+test('rejects reordered equal-count events',()=>assert.throws(()=>compareCsv(c,valid.replace('0.001,-4\n0.002,-4','0.002,-4\n0.001,-4')),/event|ordered/));
+test('rejects changed signed amplitude with equal row count',()=>assert.throws(()=>compareCsv(c,valid.replace('0.002,-4','0.002,-100')),/amplitude/));

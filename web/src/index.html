@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; connect-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Wavecraft · Phase 1 portability proof</title>
+<style>/*INLINE_CSS*/</style>
+</head>
+<body>
+<header><div><p class="eyebrow">WAVECRAFT / ENGINEERING PROOF 01</p><h1>Carry the source. Keep the bytes.</h1><p>Offline portability bench · Phase 1 only</p></div><span class="badge">NOT THE WAVEFORM EDITOR</span></header>
+<main>
+<p class="lead">This standalone file tests local input, a tiny ZIP container, SVG coordinates, and browser recovery. It does not compile or export waveforms.</p>
+<p class="limitation">The direct disk test requires a person in Chrome and Edge. HTTP checks do not satisfy that gate.</p>
+<div class="grid">
+<section aria-labelledby="input-title"><div class="sectionhead"><span>01</span><h2 id="input-title">Local evidence</h2></div>
+<label>Import YAML · UTF-8, at most 1 MiB<input id="yaml-file" type="file" accept=".yaml,.yml,text/yaml,text/plain"></label>
+<label>Import image · PNG, JPEG, WebP, at most 4 MiB<input id="image-file" type="file" accept="image/png,image/jpeg,image/webp"></label>
+<div class="actions"><button id="sample">Load sample evidence</button><button id="download-yaml">Download original YAML</button><button id="download-image">Download original image</button></div>
+<p id="source-status" class="status" aria-live="polite"></p>
+<label for="yaml-preview">Original YAML · read only</label><textarea id="yaml-preview" readonly spellcheck="false"></textarea>
+<p id="yaml-status" class="status" aria-live="polite"></p>
+<p class="small">Syntax checks do not establish Wavecraft semantics. ZIP saving retains invalid YAML unchanged.</p>
+</section>
+<section aria-labelledby="coordinate-title"><div class="sectionhead"><span>02</span><h2 id="coordinate-title">Screen to SVG</h2></div>
+<p>Click the center cross at SVG coordinates (200, 120). Change zoom and width, then click it again. These are SVG units, not image pixels.</p>
+<div class="actions controls"><label>View zoom<select id="zoom"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label><label>Panel width<select id="width"><option value="100">100%</option><option value="75">75%</option><option value="50">50%</option></select></label><button id="check-transform">Check native transform</button></div>
+<div id="plot-wrap"><svg id="proof-svg" viewBox="0 0 400 240" role="img" aria-label="Image and SVG pointer mapping proof. The center cross is at 200, 120.">
+<defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="#cbd8d9" stroke-width="0.7"/></pattern></defs>
+<rect width="400" height="240" fill="#f0f5f4"/><image id="evidence-image" x="0" y="0" width="400" height="240" preserveAspectRatio="xMidYMid meet" opacity="0.32"/>
+<rect width="400" height="240" fill="url(#grid)"/><path d="M 180 120 H 220 M 200 100 V 140" stroke="#006d68" stroke-width="2"/>
+<circle id="pointer-mark" cx="200" cy="120" r="4" fill="#b34322" pointer-events="none"/><text x="208" y="111" font-size="10" fill="#254c50">200, 120</text>
+</svg></div><p id="pointer-status" class="status" aria-live="polite">No pointer input yet.</p><p id="transform-status" class="small">No transform check yet.</p>
+<p id="image-status" class="small" aria-live="polite"></p>
+</section>
+<section aria-labelledby="zip-title"><div class="sectionhead"><span>03</span><h2 id="zip-title">Portable byte proof</h2></div>
+<p>Save the source bytes and image bytes together. Reopen the download to compare it with the current evidence.</p>
+<div class="actions"><button id="download-zip" class="primary">Download proof ZIP</button><button id="roundtrip">Check in-memory round-trip</button></div>
+<label>Reopen proof ZIP · at most 6 MiB<input id="zip-file" type="file" accept=".zip,application/zip"></label>
+<p id="zip-status" class="status" aria-live="polite">No ZIP check yet.</p>
+<p class="small">The proof format contains a manifest, original YAML, and an optional original image. It is separate from the future project format.</p>
+</section>
+<section aria-labelledby="recovery-title"><div class="sectionhead"><span>04</span><h2 id="recovery-title">Recovery boundary</h2></div>
+<p>Write a complete ZIP revision. Reload this same file, then read the revision. The database belongs to this browser origin.</p>
+<label class="check"><input id="deny-storage" type="checkbox">Simulate denied recovery storage</label>
+<div class="actions"><button id="write-recovery">Write recovery revision</button><button id="read-recovery">Read recovery revision</button></div>
+<p id="storage-status" class="status" aria-live="polite">Recovery has not been tested. Keep an explicit ZIP backup.</p>
+<p class="small">Only the transaction complete event confirms a write. Storage availability does not guarantee permanent retention.</p>
+</section>
+</div>
+<section class="wide" aria-labelledby="verification-title"><div class="sectionhead"><span>05</span><h2 id="verification-title">Human direct-file test card</h2></div>
+<p>Automatic file URL access is blocked by the browser policy. A person must perform this test in Windows Chrome and Edge.</p>
+<ol>
+<li>Download the release HTML, notices, checklist, and sample fixtures.</li>
+<li>Disconnect networking.</li>
+<li>Open the HTML directly from disk in Chrome.</li>
+<li>Import the sample YAML and PNG through the file inputs.</li>
+<li>Download the proof ZIP.</li>
+<li>Reopen that ZIP and confirm all three comparison fields are true.</li>
+<li>Change the zoom and panel width.</li>
+<li>Click the center cross and check coordinates within two SVG units.</li>
+<li>Write a recovery revision and wait for transaction complete.</li>
+<li>Reload this same HTML file and read the recovery revision.</li>
+<li>Confirm the recovery payload comparison fields are true.</li>
+<li>Enable simulated denied recovery storage and attempt a write.</li>
+<li>Download and reopen another ZIP while storage remains denied.</li>
+<li>Save the diagnostic report and record the browser version.</li>
+<li>Repeat this test in Edge.</li>
+</ol>
+<p class="limitation">Pending gate: no supported browser configuration has a human direct-file result in this build.</p>
+<div class="actions"><button id="download-checklist">Download test card</button><button id="download-report">Download diagnostic report</button></div>
+<details open><summary>Diagnostic report · current session</summary><pre id="report"></pre></details>
+</section>
+<details class="wide"><summary>Build identity and third-party notices</summary><pre id="build-info"></pre><pre id="notices"></pre></details>
+</main>
+<footer>All input stays in this browser. The artifact contains no runtime network dependency. Browser recovery is separate from explicit file saving.</footer>
+<script>/*INLINE_JS*/</script>
+</body>
+</html>

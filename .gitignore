@@ -10,3 +10,4 @@ build/
 venv/
 *.whl
 outputs/
+/web/node_modules/

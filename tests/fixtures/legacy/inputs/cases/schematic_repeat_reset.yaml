@@ -1,0 +1,4 @@
+name: schematic_repeat_reset
+steps:
+  - {t: 2us, value: 1A}
+  - {t: 10us, value: 3A}

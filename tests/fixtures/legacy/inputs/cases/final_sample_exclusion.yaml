@@ -1,0 +1,5 @@
+name: final_sample_exclusion
+resolution: 2us
+steps:
+  - {t: 0us, value: 0A}
+  - {t: 10us, value: 10A}

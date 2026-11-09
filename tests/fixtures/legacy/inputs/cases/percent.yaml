@@ -1,0 +1,7 @@
+name: percent
+nominal_current: 240A
+slew_rate: 6A/us
+resolution: 1us
+steps:
+  - {t: 0us, value: 0A}
+  - {hold: 175%, for: 5us}
