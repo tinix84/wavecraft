@@ -38,7 +38,63 @@ export function mountMeasurements() {
   let dragging: number | undefined;
   const format = (value: number) => Number(value.toPrecision(7)).toString();
 
+  const notes: {time: number; text: string; unit: string; source: string}[] = [];
+  const noteText = document.getElementById('studio-note-text') as HTMLInputElement;
+  const noteTime = document.getElementById('studio-note-time') as HTMLInputElement;
+  const noteStatus = document.getElementById('studio-note-status')!;
+  const activeSource = () => (document.getElementById('source') as HTMLTextAreaElement).value;
+
+  function paintNotes() {
+    plot.querySelectorAll('#annotation-layer').forEach(layer => layer.remove());
+    document.getElementById('studio-note-controls')!.hidden = tool.value !== 'note';
+    if (!frame || !notes.length) return;
+    const group = document.createElementNS('http://www.w3.org/2000/svg','g');
+    group.id = 'annotation-layer';
+    group.setAttribute('pointer-events','none');
+    const source = activeSource();
+    for (const note of notes) {
+      if (note.unit !== frame.unit || note.source !== source || note.time < frame.firstUs || note.time > frame.lastUs) continue;
+      const value = measureAt(frame.points,note.time);
+      if (value === undefined) continue;
+      const x = frame.left + (note.time-frame.firstUs)/(frame.lastUs-frame.firstUs)*(frame.right-frame.left);
+      const y = frame.y(value);
+      if (y < frame.top || y > frame.bottom) continue;
+      const dot = document.createElementNS(group.namespaceURI,'circle');
+      dot.setAttribute('cx',String(x)); dot.setAttribute('cy',String(y)); dot.setAttribute('r','4'); dot.setAttribute('fill','#ffc04d');
+      const label = document.createElementNS(group.namespaceURI,'text');
+      const alignRight = x > (frame.left + frame.right)/2;
+      label.setAttribute('text-anchor',alignRight ? 'end' : 'start');
+      label.setAttribute('x',String(x + (alignRight ? -7 : 7)));
+      label.setAttribute('y',String(y < frame.top+18 ? y+16 : y-8));
+      label.textContent = note.text;
+      group.append(dot,label);
+    }
+    plot.append(group);
+  }
+
+  document.getElementById('studio-note-pin')!.onclick = () => {
+    const time = noteTime.valueAsNumber, text = noteText.value.trim();
+    if (!frame || !text || measureAt(frame.points,time) === undefined) {
+      noteStatus.textContent = 'Enter a note and a time within the waveform.';
+      return;
+    }
+    notes.push({time,text,unit:frame.unit,source:activeSource()});
+    noteStatus.textContent = 'Note pinned.';
+    paintNotes();
+  };
+  document.getElementById('studio-note-undo')!.onclick = () => {
+    const source = activeSource();
+    for (let index=notes.length-1; index>=0; index--) {
+      if (notes[index].source !== source) continue;
+      notes.splice(index,1);
+      noteStatus.textContent = 'Last note removed.';
+      paintNotes();
+      return;
+    }
+  };
+
   function paint() {
+    paintNotes();
     plot.querySelectorAll('#measurement-layer').forEach(layer => layer.remove());
     controls.hidden = tool.value !== 'a' && tool.value !== 'b';
     if (controls.hidden || !frame) {
@@ -85,7 +141,8 @@ export function mountMeasurements() {
     const time = frame.firstUs + fraction * (frame.lastUs-frame.firstUs);
     const points = frame.points;
     if (!points.length) return;
-    times[tool.value === 'b' ? 1 : 0].value = String(Math.max(points[0][0],Math.min(points[points.length-1][0],time)));
+    const input = tool.value === 'note' ? noteTime : times[tool.value === 'b' ? 1 : 0];
+    input.value = String(Math.max(points[0][0],Math.min(points[points.length-1][0],time)));
     paint();
   }
   tool.onchange = paint;

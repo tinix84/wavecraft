@@ -1,3 +1,4 @@
+import { mountFigureExport } from './ui/figure-export.ts';
 import { mountMeasurements } from './ui/measurement-cursors.ts';
 import { compileYaml, expandFinite } from './semantic/index.ts';
 import type { CompiledWaveform, Diagnostic, Point } from './semantic/index.ts';
@@ -793,4 +794,4 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
   preview();
 }
 
-if (typeof window !== 'undefined') (globalThis as any).WaveSemantic = {mount: mountSemanticEditor, mountMeasurements};
+if (typeof window !== 'undefined') (globalThis as any).WaveSemantic = {mount: mountSemanticEditor, mountMeasurements, mountFigureExport};
