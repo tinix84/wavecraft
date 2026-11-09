@@ -457,7 +457,7 @@ test('GUI creates an authored pulse, wraps periodic timing, and explicitly corre
   assert.match(get('source').value,/to: 200%/);assert.doesNotMatch(get('source').value,/arriveAt/);
   assert.equal(session.result.compiled.nodes[0].pattern.find((n:any)=>n.id==='plateau').timing.durationS,.002);
   get('undo').onclick({});assert.equal(get('source').value,before);get('redo').onclick({});assert.equal(session.result.compiled.nodes[0].pattern.find((n:any)=>n.id==='rise').timing.durationS,80e-6);
-  get('semantic-yaml-toggle').onclick({});assert.equal(get('source-panel').hidden,true);get('semantic-yaml-toggle').onclick({});assert.equal(get('source-panel').hidden,false);
+  assert.equal(get('source-panel').hidden,true);get('semantic-yaml-toggle').onclick({});assert.equal(get('source-panel').hidden,false);get('semantic-yaml-toggle').onclick({});assert.equal(get('source-panel').hidden,true);
 });
 test('GUI creates signed voltage, explicit points, keyboard table selection, insertion and removal without YAML input',async()=>{
   const {get,context}=await editor();createViaGui(get,'voltage');
