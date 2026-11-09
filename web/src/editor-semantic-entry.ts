@@ -265,7 +265,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     $('semantic-inspector').hidden = !active;
     $('semantic-authoring').hidden = !active;
     $('semantic-snap-value-label').textContent=`Snap level (${session.result?.compiled.dimension==='voltage'?'V':'A'}; 0 = off)`;
-    if(!active) { $('source-panel').hidden=false; $('editor-layout').style.gridTemplateColumns=''; }
+    $('semantic-yaml-toggle').textContent = active ? 'Source YAML' : 'Source JSON';
     $('plot').setAttribute('role',active?'group':'img');
     if (active) {
       $('undo').disabled = session.dirty || !session.canUndo;
@@ -517,9 +517,9 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     $('semantic-new-form').open=false;
   };
   $('semantic-yaml-toggle').onclick=()=>{
-    const hidden=!$('source-panel').hidden;$('source-panel').hidden=hidden;
-    $('editor-layout').style.gridTemplateColumns=hidden?'minmax(0,1fr)':'';
-    $('semantic-yaml-toggle').textContent=hidden?'Show YAML pane':'Hide YAML pane';$('semantic-yaml-toggle').setAttribute('aria-expanded',String(!hidden));draw();
+    const panel = $('source-panel');
+    panel.hidden = !panel.hidden;
+    $('semantic-yaml-toggle').setAttribute('aria-expanded', String(!panel.hidden));
   };
   $('semantic-add-parent').onchange=()=>{clearProposal();insertionOptions();};
   $('semantic-add-kind').onchange=()=>{
