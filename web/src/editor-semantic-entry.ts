@@ -92,13 +92,14 @@ export function localDetail(compiled: CompiledWaveform) {
   return expandFinite(compiled, {horizonS, maxPoints: 10000});
 }
 
-export function mountSemanticEditor(point: { sync: () => void; preview: () => void; isDirty: () => boolean; project?: any }) {
+export function mountSemanticEditor(point: { sync: () => void; preview: () => void; isDirty: () => boolean; subscribe?: (changed: () => void) => void; project?: any }) {
   const $ = (id: string) => document.getElementById(id) as any;
   if (!$('source-mode')) return;
   const session = new SemanticSession();
   for(const [id,value] of Object.entries({'semantic-tool':'select','semantic-new-dimension':'current','semantic-add-kind':'ramp','semantic-add-control':'slew','semantic-wrap-mode':'periodic','semantic-wrap-control':'period','semantic-wrap-outer-control':'period','export-repeat-mode':'expand'})) $(id).value ||= value;
   let active = false;
   let spectrumRefresh = () => {};
+  let editorChanged = () => {};
   let pending: EditProposal | undefined;
   let insertedPointId: string | undefined;
   let pendingSelection: string | undefined;
@@ -131,7 +132,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     for (const [key, label] of values) { const option = document.createElement('option'); option.value = key; option.textContent = label; select.appendChild(option); }
     select.value = values.some(([key]) => key === value) ? value : values[0]?.[0] || '';
   }
-  function clearProposal() { pending = undefined; pendingSelection=undefined; insertedPointId=undefined; $('semantic-proposal').textContent = ''; $('semantic-corrections').replaceChildren(); $('semantic-apply-edit').disabled = true; $('semantic-cancel-edit').disabled = true; }
+  function clearProposal() { pending = undefined; pendingSelection=undefined; insertedPointId=undefined; $('semantic-proposal').textContent = ''; $('semantic-corrections').replaceChildren(); $('semantic-apply-edit').disabled = true; $('semantic-cancel-edit').disabled = true; editorChanged(); }
   function editFields() {
     const segment = selected(), operation = $('semantic-operation').value;
     const isPoint = operation === 'point', isRamp = operation === 'ramp-control', isClock = operation.endsWith('-clock');
@@ -236,6 +237,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     const timing = (t: {startS:number,endS:number,durationS:number}) => `${display(t.startS * 1e6)} → ${display(t.endS * 1e6)} µs; duration ${display(t.durationS * 1e6)} µs`;
     message('semantic-proposal', [edit.type === 'flatten' ? 'Convert removes structured intent in this segment. Apply edit to confirm conversion. Undo restores the source.' : 'Preview only. Apply edit to commit this revision.', ...pending.warnings, ...repeatPreview(edit,pending), ...pending.changes.map(change => `${change.id}\n  Before: ${timing(change.before)}\n  After:  ${timing(change.after)}`)].join('\n'));
     $('semantic-apply-edit').disabled = false; $('semantic-cancel-edit').disabled = false;
+    editorChanged();
   }
   function repeatPreview(edit: EditCommand, proposal: EditProposal): string[] {
     if(edit.type==='batch')return edit.commands.flatMap(command=>repeatPreview(command,proposal));
@@ -312,7 +314,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
       if(option.value === 'json') option.textContent = active ? 'Semantic project JSON · YAML source' : 'Project JSON · editable source';
     }
     if(active) message('repeat-message','The semantic segment inspector owns repetition for this source.');
-    spectrumRefresh();
+    editorChanged();
   }
   function preview() {
     const repeat=active ? session.result?.compiled.nodes.some(node=>node.kind==='repeat') : pointDocument().repetition?.mode;
@@ -788,26 +790,6 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
   }));
   spectrumRefresh = spectrum.refresh;
   $('simulation-end').oninput=()=>{preview();spectrum.refresh();};
-  // Observe existing handlers after they update the committed source.
-  for (const id of ['source','source-mode','apply-text','discard-text','undo','redo','open-file','add','remove','update-point','apply-slew','apply-repeat','use-trace','scenario-edit','scenario-conflict','scenario-periodic','scenario-burst','semantic-load-sample','semantic-new','semantic-apply-edit','semantic-cancel-edit','semantic-propose','semantic-add-segment','semantic-wrap','apply-migration']) {
-    const element = $(id);
-    for (const name of ['onclick','oninput','onchange']) {
-      const handler = element[name];
-      if (handler) element[name] = function(this:any, event:any) {
-        digitize?.invalidate();
-        const outcome = handler.call(this,event);
-        if (outcome && typeof outcome.then === 'function') return outcome.finally(()=>{spectrumRefresh();preview();projectControls?.changed();});
-        spectrumRefresh(); preview(); projectControls?.changed(); return outcome;
-      };
-    }
-  }
-  for (const id of ['repeat-mode','repeat-period','repeat-frequency','repeat-count','burst-period','burst-frequency']) {
-    const element = $(id), name = id === 'repeat-mode' ? 'onchange' : 'oninput', handler = element[name];
-    element[name] = function(this:any,event:any) { digitize?.invalidate();const outcome = handler?.call(this,event); spectrumRefresh(); preview(); projectControls?.changed(); return outcome; };
-  }
-  // Point dragging commits in its pre-existing pointerup listener.
-  $('plot').addEventListener('pointerup',()=>{digitize?.invalidate();spectrumRefresh();preview();projectControls?.changed();});
-  $('plot').addEventListener('pointercancel',()=>{digitize?.invalidate();spectrumRefresh();preview();projectControls?.changed();});
   (globalThis as any).WaveSpectrumPanel = spectrum;
   if(point.project) {
     const key=()=>JSON.stringify([active,active?session.committedSource:pointSource(),active?session.source:source.value,active?session.selectionId:point.project.selection(),point.project.evidenceKey(),digitize?.key()||'',projectNotesPresent,$('project-notes').value,...['repeat-mode','repeat-period','repeat-frequency','repeat-count','burst-period','burst-frequency'].map(id=>$(id).value)]);
@@ -877,6 +859,22 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     }
   });
   (globalThis as any).WaveDigitizeControls=digitize;
+  let observedSource = '', observedProposal = false;
+  // Both edit adapters notify after state changes, independent of the control used.
+  editorChanged = () => {
+    const key = JSON.stringify([active, active ? session.revision : pointSource(),
+      active ? session.source : source.value, active ? session.dirty : point.isDirty(),
+      ...(!active ? ['repeat-mode','repeat-period','repeat-frequency','repeat-count','burst-period','burst-frequency'].map(id => $(id).value) : [])]);
+    const changed = key !== observedSource;
+    if (!changed && observedProposal === !!pending) return;
+    observedSource = key; observedProposal = !!pending;
+    if (changed) digitize?.invalidate();
+    spectrumRefresh();
+    preview();
+    if (changed) projectControls?.changed();
+  };
+  point.subscribe?.(editorChanged);
+  editorChanged();
   preview();
 }
 
