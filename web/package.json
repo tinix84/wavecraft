@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Standalone waveform editor preview and separate Phase 1 portability diagnostics.",
-  "engines": { "node": ">=24.11.1" },
+  "engines": {
+    "node": ">=24.11.1"
+  },
   "scripts": {
     "start": "node scripts/preview.mjs",
     "preview": "node scripts/preview.mjs",
@@ -14,13 +16,15 @@
     "test:browser": "node scripts/browser-proof.mjs",
     "package": "node scripts/build.mjs --release",
     "package:proof": "node scripts/build.mjs --proof --release",
-    "release": "npm run package"
+    "release": "npm run package",
+    "test:e2e": "node --test tests/insertion.playwright.mjs"
   },
   "dependencies": {
     "fflate": "0.8.3",
     "yaml": "2.8.1"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "playwright": "^1.65.0"
   }
 }

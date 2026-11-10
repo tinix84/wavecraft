@@ -72,16 +72,30 @@ export function mountMeasurements() {
     plot.append(group);
   }
 
-  document.getElementById('studio-note-pin')!.onclick = () => {
+  function pinNote() {
     const time = noteTime.valueAsNumber, text = noteText.value.trim();
     if (!frame || !text || measureAt(frame.points,time) === undefined) {
       noteStatus.textContent = 'Enter a note and a time within the waveform.';
-      return;
+      return false;
     }
     notes.push({time,text,unit:frame.unit,source:activeSource()});
     noteStatus.textContent = 'Note pinned.';
+    const visibility = document.getElementById('canvas-show-notes') as HTMLInputElement;
+    visibility.checked = true;
+    plot.classList.remove('no-pins');
     paintNotes();
+    noteText.value = '';
+    return true;
+  }
+  document.getElementById('studio-note-pin')!.onclick = pinNote;
+  const composer = document.getElementById('annotation-composer') as HTMLDialogElement;
+  const draft = document.getElementById('annotation-draft') as HTMLInputElement;
+  document.getElementById('annotation-form')!.onsubmit = event => {
+    event.preventDefault();
+    noteText.value = draft.value;
+    if (pinNote()) composer.close();
   };
+  document.getElementById('annotation-cancel')!.onclick = () => composer.close();
   document.getElementById('studio-note-undo')!.onclick = () => {
     const source = activeSource();
     for (let index=notes.length-1; index>=0; index--) {
@@ -122,6 +136,11 @@ export function mountMeasurements() {
       if (y(value) >= top && y(value) <= bottom) mark('circle', {cx:x, cy:y(value), r:5, fill:color});
       mark('rect', {x:x-12,y:top-18,width:24,height:18,rx:4,fill:color});
       mark('text', {x,y:top-4,'text-anchor':'middle',style:'fill:#0b182d;font-weight:700'}, index ? 'B' : 'A');
+      mark('rect', {
+        x:x-12, y:top-18, width:24, height:bottom-top+18,
+        fill:'transparent', 'pointer-events':'all', cursor:'ew-resize',
+        'data-measure-cursor':index ? 'b' : 'a'
+      });
       return value;
     });
     const [a,b] = readings;
@@ -164,9 +183,22 @@ export function mountMeasurements() {
     if (tool.value === 'off' || !frame || !event.isPrimary) return;
     event.stopImmediatePropagation();
     event.preventDefault();
+    if (tool.value === 'note') {
+      place(event);
+      draft.value = noteText.value;
+      document.getElementById('annotation-location')!.textContent = 'Note at ' + format(noteTime.valueAsNumber) + ' µs';
+      composer.showModal();
+      const bounds = composer.getBoundingClientRect();
+      composer.style.left = Math.max(8,Math.min(event.clientX+10,window.innerWidth-bounds.width-8))+'px';
+      composer.style.top = Math.max(8,Math.min(event.clientY+10,window.innerHeight-bounds.height-8))+'px';
+      draft.focus();
+      return;
+    }
+    const handle = (event.target as Element).getAttribute('data-measure-cursor');
+    if (handle === 'a' || handle === 'b') tool.value = handle;
     dragging = event.pointerId;
     plot.setPointerCapture(dragging);
-    place(event);
+    if (!handle) place(event);
   }, true);
   plot.addEventListener('pointermove', event => {
     if (event.pointerId !== dragging) return;

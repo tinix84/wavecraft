@@ -43,7 +43,6 @@ export function mountFigureExport() {
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     imageUrl = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(copy)], {type:'image/svg+xml'}));
     preview.src = imageUrl;
-    element<HTMLImageElement>('canvas-report').src = imageUrl;
   }
 
   function chooseKind() {
@@ -62,15 +61,6 @@ export function mountFigureExport() {
     const link = document.createElement('a');
     link.download = (element('wave-title').textContent?.trim() || 'waveform') + '.' + extension;
     link.href = url; link.click();
-  }
-  if (document.body?.ownerDocument) {
-    let refresh = 0;
-    const chart = document.querySelector<SVGSVGElement>('#plot')!;
-    new MutationObserver(() => {
-      cancelAnimationFrame(refresh);
-      refresh = requestAnimationFrame(() => { if (chart.clientWidth) renderFigure(); });
-    }).observe(chart,{childList:true,subtree:true});
-    renderFigure();
   }
   kind.onchange = chooseKind;
   for (const id of ['studio-figure-theme','studio-figure-cursors','studio-figure-notes']) element(id).onchange = renderFigure;

@@ -121,6 +121,7 @@ export type PlotGesture = {kind:'draw'|'drag';start:DataPoint;end:DataPoint;owne
 export type PlotGestureOptions = {
   read(): {viewport:Viewport;rect:PlotRect;mode:'select'|'pan'|'draw'|'drag';enabled:boolean;snapTimeS?:number;snapValue?:number};
   onViewport(viewport:Viewport):void;
+  onDragPosition?(point:DataPoint,label:string):void;
   onGesture(gesture:PlotGesture):void;
 };
 
@@ -146,8 +147,14 @@ export function attachPlotGestures(svg: SVGSVGElement, options: PlotGestureOptio
     event.preventDefault();
   };
   const move = (event: PointerEvent) => {
-    if (!pending || pending.pointerId !== event.pointerId || pending.mode !== 'pan') return;
+    if (!pending || pending.pointerId !== event.pointerId) return;
     const state = options.read();
+    if(pending.mode==='drag' && state.mode==='drag'){
+      const point=clientToData(svg,event.clientX,event.clientY,state.rect,state.viewport);
+      if(point && inside(point,state.viewport)) options.onDragPosition?.(snapPoint(point,state.snapTimeS,state.snapValue),pending.pointId||pending.ownerId||'Point');
+      return;
+    }
+    if(pending.mode!=='pan')return;
     if (state.mode !== 'pan') { release(); return; }
     const previous = clientToData(svg,pending.previousX,pending.previousY,state.rect,state.viewport);
     const current = clientToData(svg,event.clientX,event.clientY,state.rect,state.viewport);

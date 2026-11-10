@@ -24,6 +24,7 @@ export function mountSpectrumPanel(read: () => SpectrumSource) {
   function invalidate(text: string) {
     result = undefined;
     $('spectrum-results').hidden = true;
+    for (const id of ['spectrum-summary','spectrum-basis-info','spectrum-warnings','spectrum-filter-summary']) $(id).textContent='';
     $('spectrum-plot').replaceChildren(); $('spectrum-wave').replaceChildren(); $('spectrum-table').replaceChildren();
     $('spectrum-csv').disabled = true;
     status(text);
@@ -36,6 +37,23 @@ export function mountSpectrumPanel(read: () => SpectrumSource) {
     const key = `${state.key}|${state.dirty}`;
     if (key !== sourceKey) {
       sourceKey = key;
+      const strip = $('wave-measurements');
+      strip.replaceChildren(); strip.hidden = true;
+      if (!state.dirty) {
+        const basis = state.input(undefined,'schedule');
+        if (basis.ok) {
+          const stats = analyzeSpectrum(basis.input,{harmonicCount:1,method:'pwl'});
+          if (stats.ok) {
+            strip.title = stats.basisLabel;
+            for (const [label,value] of Object.entries({'DC mean':stats.dc,'Total RMS':stats.totalRms,'Ripple RMS':stats.acRms,'Peak-to-peak':stats.peakToPeak})) {
+              const cell=document.createElement('span'), reading=document.createElement('strong');
+              cell.textContent=label; reading.textContent=Number(value.toPrecision(5))+' '+stats.unit;
+              cell.appendChild(reading); strip.appendChild(cell);
+            }
+            strip.hidden=false;
+          }
+        }
+      }
       const select = $('spectrum-repeat'), previous = select.value;
       select.replaceChildren();
       for (const id of ['', ...state.repeats]) {
@@ -47,7 +65,7 @@ export function mountSpectrumPanel(read: () => SpectrumSource) {
     if (settingsKey !== settings()) { settingsKey = settings(); invalidate('Analysis settings changed. Select Analyze / update.'); }
     $('spectrum-analyze').disabled = state.dirty;
     if (state.dirty) status(state.dirtyMessage || 'Source draft pending. Apply or restore the source before analysis.', true);
-    else if (result) status(state.proposal ? 'Results use the committed source. The semantic edit preview is not applied.' : 'Results use the committed source. Analysis settings do not change source, history, or waveform exports.');
+    else if (result) status(state.proposal ? 'Results use the committed source. The semantic edit preview is not applied.' : '');
   }
   function svgNode(svg: any, tag: string, attrs: Record<string, any>, text?: string) {
     const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
@@ -55,25 +73,81 @@ export function mountSpectrumPanel(read: () => SpectrumSource) {
     if (text !== undefined) node.textContent = text;
     svg.appendChild(node); return node;
   }
+  const orders=[1,2];
+  let active=0;
   function spectrumPlot() {
-    const svg = $('spectrum-plot'); svg.replaceChildren(); svg.setAttribute('viewBox', '0 0 760 230');
-    const bins = result.bins.filter((bin: any) => bin.index > 0);
-    const ceiling = result.analyzedMaxHz || 1, max = Math.max(...bins.map((bin: any) => bin.peak), 1e-30);
-    const cutoff = result.filtered?.cutoffHz;
-    const x = (frequency: number) => 70 + frequency / ceiling * 665, y = (amplitude: number) => 185 - amplitude / max * 155;
-    for (let i = 0; i <= 4; i++) {
-      const amplitude = max * i / 4, frequency = ceiling * i / 4;
-      svgNode(svg, 'line', { x1: 70, x2: 735, y1: y(amplitude), y2: y(amplitude), stroke: '#dce4e7' });
-      svgNode(svg, 'text', { x: 65, y: y(amplitude) + 4, 'text-anchor': 'end', 'font-size': 11 }, fmt(amplitude));
-      svgNode(svg, 'text', { x: x(frequency), y: 205, 'text-anchor': 'middle', 'font-size': 11 }, fmt(frequency));
+    const svg=$('spectrum-plot'), box=$('fft-delta');
+    svg.replaceChildren(); box.replaceChildren();
+    svg.setAttribute('viewBox','0 0 760 230');
+    const bins=result.bins.filter((bin:any)=>bin.index>0);
+    if (!bins.length) return;
+    const ceiling=result.analyzedMaxHz, cutoff=result.filtered?.cutoffHz;
+    const max=Math.max(...bins.map((bin:any)=>bin.peak),1e-30);
+    const logX=$('fft-log-x').checked, logY=$('fft-log-y').checked;
+    const low=Math.log10(bins[0].frequencyHz), span=Math.log10(ceiling)-low||1;
+    const floor=Math.ceil(Math.log10(max))-8;
+    const x=(hz:number)=>70+665*(logX?(Math.log10(hz)-low)/span:hz/ceiling);
+    const y=(amp:number)=>185-155*(logY?Math.max(0,(Math.log10(amp)-floor)/8):amp/max);
+    const divisor=ceiling>=1e6?1e6:ceiling>=1e3?1e3:1;
+    const hzUnit=divisor===1e6?'MHz':divisor===1e3?'kHz':'Hz';
+    const short=(n:number)=>Number(n.toPrecision(4)).toString();
+    for(let i=0;i<=4;i++){
+      const amp=logY?10**(floor+2*i):max*i/4;
+      const hz=logX?10**(low+span*i/4):ceiling*i/4;
+      svgNode(svg,'line',{x1:70,x2:735,y1:y(amp),y2:y(amp),stroke:'#34485f'});
+      svgNode(svg,'text',{x:64,y:y(amp)+4,'text-anchor':'end','font-size':11},short(amp));
+      svgNode(svg,'text',{x:x(hz),y:205,'text-anchor':'middle','font-size':11},short(hz/divisor));
     }
-    for (const bin of bins) {
-      svgNode(svg, 'line', { x1: x(bin.frequencyHz), x2: x(bin.frequencyHz), y1: 185, y2: y(bin.peak), stroke: '#007f79', 'stroke-width': 2 });
-      if (cutoff) svgNode(svg, 'line', { x1: x(bin.frequencyHz) + 1, x2: x(bin.frequencyHz) + 1, y1: 185, y2: y(bin.peak * gain(bin.frequencyHz, cutoff)), stroke: '#b86419', 'stroke-width': 2 });
+    function trace(filtered:boolean){
+      const points=bins.map((bin:any)=>x(bin.frequencyHz)+','+y(bin.peak*(filtered?gain(bin.frequencyHz,cutoff):1)));
+      svgNode(svg,'polyline',{points:points.join(' '),fill:'none',stroke:filtered?'#ffae4b':'#35dfed','stroke-width':2});
     }
-    svgNode(svg, 'text', { x: 74, y: 15, 'font-size': 12 }, `Peak amplitude (${result.unit}) · DC excluded`);
-    svgNode(svg, 'text', { x: 400, y: 227, 'text-anchor': 'middle', 'font-size': 12 }, 'Frequency (Hz)');
+    trace(false); if(cutoff) trace(true);
+    svgNode(svg,'text',{x:70,y:15,'font-size':12},'Peak amplitude ('+result.unit+') · DC excluded');
+    svgNode(svg,'text',{x:735,y:15,'text-anchor':'end','font-size':12},cutoff?'Source (cyan)   Filtered (amber)':'Source (cyan)');
+    svgNode(svg,'text',{x:400,y:227,'text-anchor':'middle','font-size':12},'Frequency ('+hzUnit+')');
+    const peak=result.strongestAC;
+    if(peak){
+      svgNode(svg,'circle',{cx:x(peak.frequencyHz),cy:y(peak.peak),r:4,fill:'#ffcb65'});
+      svgNode(svg,'text',{x:Math.min(x(peak.frequencyHz)+14,545),y:Math.max(64,y(peak.peak)-7),'font-size':12},'H'+peak.index+' · '+short(peak.frequencyHz/divisor)+' '+hzUnit+' · '+short(peak.peak)+' '+result.unit);
+    }
+    const [a,b]=orders.map((order,i)=>{
+      orders[i]=Math.min(order,bins.length);
+      const bin=bins[orders[i]-1], px=x(bin.frequencyHz), name=i?'B':'A', color=i?'#cca1ff':'#ffc04d';
+      const top=i&&Math.abs(px-x(bins[orders[0]-1].frequencyHz))<26?50:26;
+      const g=svgNode(svg,'g',{'data-fft-cursor':name,cursor:'ew-resize',tabindex:0,role:'slider','aria-label':'Cursor '+name+' harmonic','aria-valuemin':1,'aria-valuemax':bins.length,'aria-valuenow':orders[i]});
+      svgNode(g,'line',{x1:px,x2:px,y1:26,y2:185,stroke:color,'stroke-dasharray':'4 3'});
+      svgNode(g,'circle',{cx:px,cy:y(bin.peak),r:5,fill:color});
+      svgNode(g,'rect',{x:px-12,y:top,width:24,height:18,rx:4,fill:color});
+      svgNode(g,'text',{x:px,y:top+14,'text-anchor':'middle',style:'fill:#0b182d;font-weight:700'},name);
+      svgNode(g,'rect',{x:px-12,y:top,width:24,height:18,fill:'transparent','pointer-events':'all'});
+      g.onkeydown=(event:KeyboardEvent)=>{
+        if(!['ArrowLeft','ArrowRight'].includes(event.key))return;
+        event.preventDefault(); active=i;
+        orders[i]=Math.max(1,Math.min(bins.length,orders[i]+(event.key==='ArrowLeft'?-1:1)));
+        spectrumPlot(); svg.querySelectorAll('[data-fft-cursor]')[i].focus();
+      };
+      return bin;
+    });
+    const reading=(bin:any)=>'H'+bin.index+' · '+fmt(bin.frequencyHz)+' Hz · '+fmt(bin.peak)+' '+result.unit;
+    for(const label of ['A '+reading(a),'B '+reading(b),'Δf '+fmt(b.frequencyHz-a.frequencyHz)+' Hz','Δpeak '+fmt(b.peak-a.peak)+' '+result.unit]){
+      const cell=document.createElement('span'); cell.textContent=label; box.appendChild(cell);
+    }
+    function place(event:PointerEvent){
+      const matrix=svg.getScreenCTM(); if(!matrix)return;
+      const px=new DOMPoint(event.clientX,event.clientY).matrixTransform(matrix.inverse()).x;
+      const bin=bins.reduce((best:any,next:any)=>Math.abs(x(next.frequencyHz)-px)<Math.abs(x(best.frequencyHz)-px)?next:best);
+      if(orders[active]!==bin.index){orders[active]=bin.index;spectrumPlot();}
+    }
+    svg.onpointerdown=(event:PointerEvent)=>{
+      if(!event.isPrimary||event.button!==0)return;
+      const handle=(event.target as Element).closest('[data-fft-cursor]');
+      if(handle)active=Number(handle.getAttribute('data-fft-cursor')==='B');
+      svg.setPointerCapture(event.pointerId); if(!handle)place(event);
+    };
+    svg.onpointermove=(event:PointerEvent)=>{if(svg.hasPointerCapture(event.pointerId))place(event);};
   }
+  for(const id of ['fft-log-x','fft-log-y']) $(id).onchange=()=>{if(result)spectrumPlot();};
   function table() {
     const body = $('spectrum-table'); body.replaceChildren();
     if (!result) return;
@@ -116,6 +190,7 @@ export function mountSpectrumPanel(read: () => SpectrumSource) {
   function render() {
     const r = result, unit = r.unit, strong = r.strongestAC;
     $('spectrum-results').hidden = false;
+    $('fft-timing').textContent='Δf '+fmt(1/r.durationS)+' Hz · '+(r.method==='fft'?'Δt '+fmt(r.durationS/r.sampleCount)+' s ('+r.sampleCount+' samples)':'Δt — exact PWL integration');
     $('spectrum-summary').textContent = `DC average: ${fmt(r.dc)} ${unit} · Total RMS: ${fmt(r.totalRms)} ${unit} · AC / ripple RMS: ${fmt(r.acRms)} ${unit} · Input peak-to-peak: ${fmt(r.peakToPeak)} ${unit}.`;
     $('spectrum-basis-info').textContent = `${r.basisLabel} · ${fmt(r.durationS)} s · ${r.method === 'fft' ? 'FFT numerical estimate' : 'PWL Fourier coefficients'} · Bin spacing ${fmt(1 / r.durationS)} Hz · Highest analyzed frequency ${fmt(r.analyzedMaxHz)} Hz. ${r.method === 'fft' ? `${r.sampleCount} samples · Sample rate ${fmt(r.sampleCount / r.durationS)} Hz · Nyquist ${fmt(r.sampleCount / (2 * r.durationS))} Hz.` : ''} ${strong ? `Strongest analyzed AC component: order ${strong.index}, ${fmt(strong.frequencyHz)} Hz, ${fmt(strong.peak)} ${unit} peak, ${fmt(strong.rms)} ${unit} RMS.` : 'No nonzero AC component in the analyzed band.'}`;
     $('spectrum-warnings').textContent = [...r.warnings, `Unresolved input AC RMS above the analyzed band: ${fmt(r.unresolvedAcRms)} ${unit}. The analysis ceiling is not the highest harmonic present.`].join('\n');
@@ -123,7 +198,7 @@ export function mountSpectrumPanel(read: () => SpectrumSource) {
     const f = r.filtered;
     $('spectrum-filter-summary').textContent = f ? `Ideal low-pass: fc ${fmt(f.cutoffHz)} Hz · τ ${fmt(f.tauS)} s · Preserved DC ${fmt(f.dc)} ${unit} · Filtered ripple RMS bounds ${fmt(f.acRmsLower)}–${fmt(f.acRmsUpper)} ${unit} · Total RMS bounds ${fmt(f.totalRmsLower)}–${fmt(f.totalRmsUpper)} ${unit}.` : 'Ideal low-pass filter is off.';
     spectrumPlot(); table(); waveform(); $('spectrum-csv').disabled = false;
-    status(read().proposal ? 'Results use the committed source. The semantic edit preview is not applied.' : 'Results use the committed source. Analysis settings do not change source, history, or waveform exports.');
+    status(read().proposal ? 'Results use the committed source. The semantic edit preview is not applied.' : '');
   }
   function updatePair(authority: 'cutoff' | 'tau') {
     cutoffAuthority = authority;

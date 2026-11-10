@@ -182,7 +182,13 @@ export async function buildEditorArtifact({ release = false } = {}) {
 }
 
 export async function bundleSemanticEditor() {
+  const exampleRoot = path.resolve(webRoot, '../examples');
+  const filenames = (await readdir(exampleRoot)).filter(name => name.endsWith('.yaml')).sort();
+  const examples = Object.fromEntries(await Promise.all(filenames.map(async name =>
+    [name, await readFile(path.join(exampleRoot, name), 'utf8')]
+  )));
   const bundled = await build({
+    define: { WAVEFORM_EXAMPLES: JSON.stringify(examples) },
     absWorkingDir: webRoot, entryPoints: ['src/editor-semantic-entry.ts'], bundle: true,
     platform: 'browser', format: 'iife', target: ['chrome110', 'edge110'], write: false,
     minify: true, legalComments: 'inline', metafile: true

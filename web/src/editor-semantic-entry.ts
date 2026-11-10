@@ -10,7 +10,7 @@ import type { LeafSegment, Repeat } from './semantic/types.ts';
 import { newDocumentSource, unusedId, segmentCommand, findCompiled, inspectorSummary, correctionCommands, rampTimeCommand } from './ui/semantic-authoring.ts';
 import { attachPlotGestures, fitViewport, pointQuantity, rampTargetValue } from './ui/plot-tools.ts';
 import type { Viewport, PlotRect } from './ui/plot-tools.ts';
-import { parseQuantity } from './semantic/units.ts';
+import { parseQuantity, resolveLevel } from './semantic/units.ts';
 import { semanticSpectrumInput, pointSpectrumInput } from './analysis/spectrum.ts';
 import { mountSpectrumPanel } from './ui/spectrum-panel.ts';
 import { compilePointProject, exportWaveform } from './export/index.ts';
@@ -100,6 +100,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
   let active = false;
   let spectrumRefresh = () => {};
   let pending: EditProposal | undefined;
+  let insertedPointId: string | undefined;
   let pendingSelection: string | undefined;
   let viewport: Viewport = fitViewport([]), viewportRevision = -1;
   let plotRect: PlotRect = {left:62,right:676,top:20,bottom:312};
@@ -130,7 +131,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     for (const [key, label] of values) { const option = document.createElement('option'); option.value = key; option.textContent = label; select.appendChild(option); }
     select.value = values.some(([key]) => key === value) ? value : values[0]?.[0] || '';
   }
-  function clearProposal() { pending = undefined; pendingSelection=undefined; $('semantic-proposal').textContent = ''; $('semantic-corrections').replaceChildren(); $('semantic-apply-edit').disabled = true; $('semantic-cancel-edit').disabled = true; }
+  function clearProposal() { pending = undefined; pendingSelection=undefined; insertedPointId=undefined; $('semantic-proposal').textContent = ''; $('semantic-corrections').replaceChildren(); $('semantic-apply-edit').disabled = true; $('semantic-cancel-edit').disabled = true; }
   function editFields() {
     const segment = selected(), operation = $('semantic-operation').value;
     const isPoint = operation === 'point', isRamp = operation === 'ramp-control', isClock = operation.endsWith('-clock');
@@ -230,6 +231,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
       return;
     }
     pending = result.proposal;
+    insertedPointId = edit.type === 'insert-point' ? edit.point.id : undefined;
     pendingSelection=edit.type==='insert-segment'?edit.segment.id:edit.type==='wrap-repeat'?edit.repeat.id:undefined;
     const timing = (t: {startS:number,endS:number,durationS:number}) => `${display(t.startS * 1e6)} → ${display(t.endS * 1e6)} µs; duration ${display(t.durationS * 1e6)} µs`;
     message('semantic-proposal', [edit.type === 'flatten' ? 'Convert removes structured intent in this segment. Apply edit to confirm conversion. Undo restores the source.' : 'Preview only. Apply edit to commit this revision.', ...pending.warnings, ...repeatPreview(edit,pending), ...pending.changes.map(change => `${change.id}\n  Before: ${timing(change.before)}\n  After:  ${timing(change.after)}`)].join('\n'));
@@ -253,7 +255,26 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
       `  Outer count: ${before.outer.count} → ${after.outer.count}`);
     return lines;
   }
+  function simulationRecord(compiled:CompiledWaveform,end:number|undefined):CompiledWaveform {
+    const start=compiled.durationS;
+    if(end===undefined || end<=start || compiled.finalValue===0 || compiled.nodes.some(node=>node.kind==='repeat')) return compiled;
+    // PWL timestamps must increase. Use a floating-point-sized transition at the endpoint.
+    const zeroAt=Math.min(end,start+Math.max(Number.MIN_VALUE,start*Number.EPSILON));
+    return {...compiled,durationS:zeroAt,finalValue:0,nodes:[...compiled.nodes,{
+      kind:'ramp',id:'zero-padding',derived:true,source:{path:[]},
+      timing:{startS:start,endS:zeroAt,durationS:zeroAt-start},points:[[start,compiled.finalValue],[zeroAt,0]]
+    }]};
+  }
+  function simulationEnd() {
+    const field=$('simulation-end');
+    if (!field.value && !field.validity?.badInput) return undefined;
+    const end=Number(field.value);
+    if (!Number.isFinite(end)||end<=0) throw Error('Enter a positive simulation end time in seconds.');
+    return end;
+  }
   function horizon() {
+    const end=simulationEnd();
+    if(end!==undefined)return end;
     const raw = $('semantic-horizon').value.trim();
     if (!raw) return undefined;
     const value = Number(raw);
@@ -294,6 +315,10 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     spectrumRefresh();
   }
   function preview() {
+    const repeat=active ? session.result?.compiled.nodes.some(node=>node.kind==='repeat') : pointDocument().repetition?.mode;
+    const single=active ? !repeat : !repeat||repeat==='single';
+    const last=active ? session.result?.compiled.durationS : pointDocument().points.at(-1)?.[0]*1e-6;
+    $('simulation-end').placeholder=single&&Number.isFinite(last)?String(Number(last.toPrecision(12))):'Automatic';
     let error = '';
     const format = $('format').value, sourceOnly = format === 'json' || active && format === 'yaml';
     $('semantic-horizon-field').hidden = sourceOnly;
@@ -320,8 +345,16 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     const compiled = active ? session.result ? {ok:true as const,compiled:session.result.compiled} : undefined : compilePointProject(project);
     if (!compiled) throw Error('Apply a valid semantic document first.');
     if (!compiled.ok) throw Error(diagnosticText(compiled.diagnostics));
-    const result = exportWaveform(compiled.compiled, {format:(format === 'yaml' ? 'csv' : format) as ExportFormat,name,horizonS:horizon(),sampleIntervalS:format==='csv-uniform'?Number($('export-sample-interval').value):undefined,repeatMode:['pwl','pwl-file'].includes(format) && $('export-repeat-mode').value==='auto'?'auto':'expand'});
+    const single=!compiled.compiled.nodes.some(node=>node.kind==='repeat');
+    const defaultEnd=single?compiled.compiled.durationS:undefined;
+    $('simulation-end').placeholder=defaultEnd===undefined?'Automatic':String(Number(defaultEnd.toPrecision(12)));
+    const stop=simulationEnd() ?? ($('semantic-horizon').value.trim()?horizon():defaultEnd);
+    const result = exportWaveform(simulationRecord(compiled.compiled,stop), {format:(format === 'yaml' ? 'csv' : format) as ExportFormat,name,horizonS:horizon(),sampleIntervalS:format==='csv-uniform'?Number($('export-sample-interval').value):undefined,repeatMode:['pwl','pwl-file'].includes(format) && $('export-repeat-mode').value==='auto'?'auto':'expand'});
     if (!result.ok) throw Error(diagnosticText(result.diagnostics));
+    if ((format==='pwl'||format==='pwl-file') && stop!==undefined && stop>0) {
+      const netlist=result.artifacts.find(file=>file.filename.endsWith('.cir'));
+      if(netlist)netlist.content+='\n.tran 0 '+stop+'\n';
+    }
     if (format === 'yaml') {
       const rows = result.artifacts[0].content.split(/\r?\n/).filter(line => line.trim() && !line.startsWith('#')).slice(1).map(line => line.split(',').map(Number));
       const content = `# Finite point export; horizon ${result.metadata.horizonS} s. Repetition stops at this horizon.\n# Authoring constraints are not included. Save Project JSON to retain repetition.\nname: ${JSON.stringify(name)}\nsteps:\n`+rows.map(([t,v])=>`  - {t: "${t}s", value: "${v}A"}`).join('\n')+'\n';
@@ -381,7 +414,7 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
         const editable=!!pointId || index===points.length-1 && (leaf.kind==='ramp'||leaf.kind==='hold');
         const marker = append(target,'circle',{cx:scales.x(p[0]),cy:scales.y(p[1]),r:isSelected?6:4.5,fill:isSelected||pointId?'var(--accent)':'white',stroke:'var(--accent)','stroke-width':2,tabindex:0,role:'button','aria-label':`${pointId ? 'Source point' : 'Compiled corner'} · select ${owner}`,'data-owner':owner,...(pointId?{'data-source-point':pointId}:{}),...(editable?{'data-editable':'true','data-origin-s':leaf.timing.startS+offset,'data-role':pointId?'point':leaf.kind}:{}),style:'cursor:pointer','clip-path':'url(#semantic-main-clip)'});
         const selectOwner = () => { choose(owner); if(pointId) {$('semantic-operation').value='point';editFields();$('semantic-point').value=pointId;populateValue();highlightPoint();} };
-        marker.onclick=()=>{if($('semantic-tool').value==='select')selectOwner();};
+        marker.onclick=()=>{if($('semantic-tool').value==='select'){selectOwner();showPosition(pointId||owner,p[0],p[1]);}};
         marker.onkeydown=(event:KeyboardEvent)=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectOwner();}};
         if(leaf.kind==='ramp' && index===points.length-1) {
           const handle=append(target,'rect',{x:scales.x(p[0])-5,y:21,width:10,height:10,fill:'var(--accent)',tabindex:0,role:'button','aria-label':`Ramp time handle · select ${owner}`,'data-owner':owner,'data-editable':'true','data-role':'ramp-time','data-origin-s':leaf.timing.startS+offset,'clip-path':'url(#semantic-main-clip)',style:'cursor:ew-resize'});
@@ -393,6 +426,8 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     }
   }
   function draw() {
+    $('point-coordinates').textContent='Select a point to see its coordinates.';
+    $('point-coordinates').hidden=$('studio-cursor').value!=='off';
     if (!active || $('edit-panel').hidden) return;
     if (!session.result) {
       (globalThis as any).studioMeasure?.();
@@ -559,7 +594,12 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
   $('semantic-remove-point').onclick=()=>{if(selected()?.kind==='points')propose({type:'remove-point',id:$('semantic-point').value});};
   $('semantic-tool').onchange=()=>{clearProposal();draw();};
   $('semantic-fit').onclick=()=>{viewportRevision=-1;draw();};
+  function showPosition(label:string,timeS:number,value:number) {
+    const unit=session.result?.compiled.dimension==='voltage'?'V':'A';
+    $('point-coordinates').textContent=label+' · '+display(timeS*1e6)+' µs · '+display(value)+' '+unit;
+  }
   attachPlotGestures($('plot'),{
+    onDragPosition:(point,label)=>showPosition(label,point.timeS,point.value),
     read:()=>({viewport,rect:plotRect,mode:active?$('semantic-tool').value:'select',enabled:active&&!session.dirty&&!!session.result,snapTimeS:Number($('semantic-snap-time').value)>0?Number($('semantic-snap-time').value)*1e-6:undefined,snapValue:Number($('semantic-snap-value').value)>0?Number($('semantic-snap-value').value):undefined}),
     onViewport:view=>{viewport=view;draw();},
     onGesture:gesture=>{
@@ -619,7 +659,11 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     if(!pending) return;
     const result=session.commitProposal(pending);
     if(!result.ok){message('semantic-proposal',diagnosticText(result.diagnostics),true);state();return;}
-    source.value=session.source;if(pendingSelection)session.select(pendingSelection);clearProposal();render();message('text-message',`Semantic edit applied. Source, plot, and export use revision ${session.revision}.`);
+    const pointId = insertedPointId;
+    if (pointId) viewportRevision = session.revision;
+    source.value=session.source;if(pendingSelection)session.select(pendingSelection);clearProposal();render();
+    if (pointId) { $('semantic-point').value=pointId; inspector(); }
+    message('text-message',`Semantic edit applied. Source, plot, and export use revision ${session.revision}.`);
   };
   for(const action of ['undo','redo'] as const) $(action).onclick=(event:any)=>{
     if(!active)return original[action]?.call($(action),event);
@@ -689,7 +733,26 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     if(handler) $(id).onclick=(event:any)=>{if(active){message('plot-message','Edit and apply semantic YAML to change this waveform.',true);return;}return handler.call($(id),event);};
   }
   for(const id of ['scenario-edit','scenario-conflict','scenario-periodic','scenario-burst']){const handler=$(id).onclick;$(id).onclick=(event:any)=>{if(!canSwitch())return;if(active)pointMode();handler?.call($(id),event);};}
-  (globalThis as any).WaveSemanticEditor={get active(){return active;},draw,preview,session};
+  function insertionContext() {
+    const item=selected(), result=session.result;
+    if(session.dirty) throw Error('Apply or restore the YAML draft first.');
+    if(item?.kind!=='points' || !result) throw Error('Select an explicit points segment. A ramp or hold can be converted to points in Selection and editing.');
+    const dimension=result.compiled.dimension, nominal=result.document.signal.nominal;
+    const reference=nominal ? parseQuantity(nominal,dimension) : undefined;
+    const revision=session.revision;
+    const unit=dimension==='voltage'?'V':'A';
+    return {name:'Segment point',unit,index:Math.max(0,item.points.findIndex(p=>p.id===$('semantic-point').value)),
+      points:item.points.map(p=>[parseQuantity(p.time,'time')*1e6,resolveLevel(p.value,dimension,reference)]),
+      apply(slot:number,[time,value]:number[]) {
+        if(session.revision!==revision || session.dirty) throw Error('The source changed. Reopen Insert point.');
+        const before=item.points[slot];
+        propose({type:'insert-point',id:item.id,point:{id:unusedId(item.id+'-point',session.sourceMap.keys()),time:time+' us',value:value+' '+unit},...(before?{beforeId:before.id}:{})});
+        if(!pending) throw Error($('semantic-proposal').textContent);
+        $('canvas-editing').open=true;
+        $('semantic-apply-edit').focus();
+      }};
+  }
+  (globalThis as any).WaveSemanticEditor={get active(){return active;},draw,preview,session,insertionContext};
   function pointRepetitionDraft() {
     if (active || point.isDirty()) return false;
     try {
@@ -701,18 +764,30 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
     } catch { return false; }
   }
   const spectrum = mountSpectrumPanel(() => ({
-    key: active ? `semantic|${session.revision}|${session.source}` : `points|${source.value}`,
+    key: String($('simulation-end').value)+'|'+(active ? `semantic|${session.revision}|${session.source}` : `points|${source.value}`),
     dirty: active ? session.dirty : point.isDirty() || pointRepetitionDraft(),
     dirtyMessage: !active && pointRepetitionDraft() ? 'Repetition settings pending. Apply repetition or restore valid text before analysis.' : undefined,
     repeats: active ? (session.result?.compiled.nodes.filter(node => node.kind === 'repeat').map(node => node.id) || []) : [],
     proposal: active && !!pending,
     input: (repeatId, level) => {
+      if (!repeatId && level==='schedule' && ($('simulation-end').value || $('simulation-end').validity?.badInput)) {
+        try {
+          const durationS=simulationEnd()!;
+          const prepared=active ? session.result : compilePointProject(pointDocument());
+          if(!prepared || !('compiled' in prepared)) throw Error('Apply a valid source before analysis.');
+          const compiled=prepared.compiled;
+          const expanded=expandFinite(simulationRecord(compiled,durationS),{horizonS:durationS,maxPoints:100000});
+          if(!expanded.ok) throw Error(diagnosticText(expanded.diagnostics));
+          return {ok:true,input:{points:expanded.points,durationS,periodic:false,unit:compiled.dimension==='voltage'?'V':'A',basisLabel:'Simulation record'}};
+        } catch(error){return {ok:false,diagnostics:[(error as Error).message]};}
+      }
       if (active) return session.result ? semanticSpectrumInput(session.result.compiled, repeatId, level) : {ok:false, diagnostics:['Apply a valid semantic document before analysis.']};
       try { return pointSpectrumInput(pointDocument(), level); }
       catch (error) { return {ok:false, diagnostics:[(error as Error).message]}; }
     }
   }));
   spectrumRefresh = spectrum.refresh;
+  $('simulation-end').oninput=()=>{preview();spectrum.refresh();};
   // Observe existing handlers after they update the committed source.
   for (const id of ['source','source-mode','apply-text','discard-text','undo','redo','open-file','add','remove','update-point','apply-slew','apply-repeat','use-trace','scenario-edit','scenario-conflict','scenario-periodic','scenario-burst','semantic-load-sample','semantic-new','semantic-apply-edit','semantic-cancel-edit','semantic-propose','semantic-add-segment','semantic-wrap','apply-migration']) {
     const element = $(id);
@@ -805,4 +880,5 @@ export function mountSemanticEditor(point: { sync: () => void; preview: () => vo
   preview();
 }
 
-if (typeof window !== 'undefined') (globalThis as any).WaveSemantic = {mount: mountSemanticEditor, mountMeasurements, mountFigureExport, mountOverview};
+declare const WAVEFORM_EXAMPLES: Record<string,string>;
+if (typeof window !== 'undefined') (globalThis as any).WaveSemantic = {examples: WAVEFORM_EXAMPLES, mount: mountSemanticEditor, mountMeasurements, mountFigureExport, mountOverview};
