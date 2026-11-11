@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { chromium } from 'playwright';
+import { unpackProject } from '../src/project/index.ts';
 
 const editor = new URL('../../prototypes/wavecraft-web-prototype.html', import.meta.url);
 let browser;
@@ -50,6 +51,72 @@ async function prepare(t, side, method, first, second) {
   await page.fill('#insert-second', String(second));
   return { page, source, points, anchor };
 }
+
+test('point insertion invalidates analysis and refreshes metrics through the committed edit', async t => {
+  const { page, points } = await prepare(t, 'after', 'xy', 50, 85);
+  const metrics = page.locator('#wave-measurements');
+  const previousMetrics = await metrics.innerText();
+  await page.click('#insert-confirm');
+  assert.equal(JSON.parse(await page.inputValue('#source')).points.length, points.length + 1);
+  assert.equal(await page.locator('#spectrum-results').isVisible(), false);
+  assert.equal(await page.locator('#spectrum-csv').isDisabled(), true);
+  assert.notEqual(await metrics.innerText(), previousMetrics);
+  assert.match(await metrics.innerText(), /80\.113 A/);
+  await page.click('#spectrum-analyze');
+  assert.equal(await page.locator('#spectrum-results').isVisible(), true);
+  assert.match(await page.locator('#spectrum-summary').textContent(), /DC average: 80\.1125 A/);
+  await page.waitForFunction(() => document.getElementById('recovery-state').textContent.startsWith('Browser recovery saved.'));
+  const archive = await page.evaluate(async () => {
+    const database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('wavecraft-project-recovery');
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      return await new Promise((resolve, reject) => {
+        const request = database.transaction('revisions').objectStore('revisions').get('latest');
+        request.onsuccess = () => resolve(Array.from(request.result.archive));
+        request.onerror = () => reject(request.error);
+      });
+    } finally { database.close(); }
+  });
+  assert.equal(JSON.parse(unpackProject(new Uint8Array(archive)).source).points.length, points.length + 1);
+  await page.click('#undo');
+  assert.equal(await page.locator('#spectrum-results').isVisible(), false);
+  assert.equal(await metrics.innerText(), previousMetrics);
+  await page.click('#spectrum-analyze');
+  await page.click('#redo');
+  assert.equal(await page.locator('#spectrum-results').isVisible(), false);
+  assert.match(await metrics.innerText(), /80\.113 A/);
+});
+
+test('point insertion invalidates a reviewed reconstruction preview', async t => {
+  const { page, anchor } = await prepare(t, 'after', 'xy', 50, 85);
+  await page.click('#insert-cancel');
+  await page.setInputFiles('#open-file', {
+    name: 'trace.csv', mimeType: 'text/csv', buffer: Buffer.from('time,level\n0,10\n100,20\n'),
+  });
+  await page.selectOption('#digitize-dimension', 'current');
+  await page.selectOption('#digitize-time-unit', 'us');
+  await page.selectOption('#digitize-value-unit', 'A');
+  await page.check('#digitize-map-confirm');
+  await page.click('#digitize-stage-csv');
+  await page.fill('#digitize-assumptions', 'Manual trace with linear interpolation between recorded points.');
+  await page.check('#digitize-overlay-review');
+  assert.equal(await page.locator('#digitize-overlay-review').isChecked(), true);
+  await page.click('#canvas-workspace summary');
+  await page.click('#studio-project');
+  await page.click('.insert-menu summary');
+  await page.click('#insert-relative-open');
+  await page.selectOption('#insert-reference', String(anchor));
+  await page.selectOption('#insert-side', 'after');
+  await page.selectOption('#insert-method', 'xy');
+  await page.fill('#insert-first', '50');
+  await page.fill('#insert-second', '85');
+  await page.click('#insert-confirm');
+  assert.equal(await page.locator('#digitize-overlay-review').isChecked(), false);
+  assert.equal(await page.locator('#use-trace').isDisabled(), true);
+});
 
 for (const [method, side, first, second, expected] of [
   ['xy', 'after', 50, 85, [50, 85]],
