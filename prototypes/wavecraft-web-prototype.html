@@ -21,8 +21,6 @@
 .studio-header .brand { margin: 0; color: #112039; font-size: 24px; }
 .studio-header .brand span { color: #65738b; font-weight: 400; }
 .studio-header nav { display: flex; flex-wrap: wrap; gap: 8px; }
-.studio-samples { margin-bottom: 12px; }
-.studio-samples > summary { color: var(--accent); width: fit-content; }
 #plot { background: #0b1a2e; border-radius: 6px; }
 #plot text { fill: #d6e5f6; }
 #plot path[clip-path][stroke="var(--accent)"] { stroke:#44e5ea; }
@@ -34,23 +32,6 @@
 #plot .point { fill: #102940; stroke: #5eeaf0; }
 #plot .selected { fill: #ffc04d; stroke: #152137; }
 #source { background: #f7f9fd; color: #1c3458; font-family: "IBM Plex Mono", Consolas, monospace; }
-@media (min-width: 851px) {
-  #editor-layout { grid-template-columns: minmax(0, 1fr) var(--source-width, 36%) auto; gap: 8px; }
-  #editor-layout:has(#source-panel[hidden]) { grid-template-columns:minmax(0,1fr) minmax(295px,30%) auto; }
-  #studio-inspector { grid-column:2; grid-row:1; max-height:85vh; overflow:auto; position:sticky; top:12px; }
-  #editor-layout:has(#source-panel:not([hidden])) #studio-inspector { display:none; }
-  .source-tab { grid-column: -2; grid-row: 1; writing-mode: vertical-rl; position: sticky; top: 12px; }
-  #source-panel { grid-column: 2; grid-row: 1; position: sticky; top: 12px; }
-  .source-width { flex-direction: row; align-items: center; justify-content: flex-end; }
-  #source { min-height: min(55vh, 620px); }
-}
-.source-tab { background: #edf2ff; color: #183991; font-weight: 600; }
-@media (max-width: 850px) {
-  .source-tab { width: 100%; text-align: left; }
-  #editor-layout { display:flex; flex-direction:column; align-items:stretch; }
-  #studio-inspector { order:1; }
-  .source-width { display: none; }
-}
 #studio-export-dialog { color:var(--ink); width:min(720px,92vw); max-height:90vh; overflow:auto; border:1px solid var(--line); border-radius:12px; padding:20px; }
 #studio-export-dialog::backdrop { background:#0b183a75; }
 #studio-figure-preview { display:block; width:100%; margin:16px 0; border:1px solid var(--line); }
@@ -65,73 +46,386 @@
   #studio-figure-preview { display:block; border:0; margin:0; width:100%; max-height:90vh; object-fit:contain; }
 }
 
-main { max-width:1800px; padding:8px clamp(10px,1.4vw,26px) 30px; }
-.studio-header {padding:8px clamp(12px,1.4vw,26px);}
-.studio-header .brand::before {content:"∿";color:#2459ef;margin-right:7px;}
-.tabs {margin:0 0 7px;gap:5px;border:0;}
-.tabs button {border:1px solid var(--line);border-radius:5px;padding:5px 14px;min-height:32px;}
-.tabs button[aria-selected=true],.mode-buttons button[aria-pressed=true] {background:#244fe0;color:white;}
-.studio-tools {position:relative;z-index:3;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 9px;background:white;border:1px solid var(--line);border-radius:7px;margin-bottom:8px;}
-.studio-tools details {position:relative;margin:0;}
-.studio-tools summary {cursor:pointer;border:1px solid var(--line);padding:5px 10px;border-radius:5px;color:var(--ink);font-weight:500;list-style:none;}
-.tool-popup {position:absolute;top:100%;left:0;z-index:5;background:white;border:1px solid var(--line);padding:14px;border-radius:7px;box-shadow:0 8px 24px #10234026;width:min(350px,80vw);}
-.insert-menu {margin-left:auto!important;}.insert-menu .tool-popup{right:0;left:auto;width:180px;}
-.studio-tools button,.studio-header button,.studio-tools select {min-height:32px;padding:4px 10px;}
-.mode-buttons {display:flex;gap:4px;}
-#editor-layout>.panel:first-child {padding:8px;}
-#editor-layout>.panel:first-child>.toolbar {padding:2px 5px 6px;}
-#studio-overview-panel,#repeat-preview,#spectrum-panel {margin-top:8px!important;padding:7px 9px;border:1px solid var(--line);border-radius:6px;}
-#studio-overview-panel h3,#repeat-preview h3 {margin:0 0 3px;}
-.view-range {font-size:12px;color:var(--muted);}
-#studio-inspector {padding:12px;}
-#studio-deltas {font-family:Consolas,monospace;line-height:1.8;}
-@media(min-width:851px){#plot{height:clamp(270px,36vh,410px);} #editor-layout:has(#source-panel[hidden]) {grid-template-columns:minmax(0,1fr) minmax(280px,25%) auto;}}
-@media(max-width:600px){.studio-tools{gap:4px}.studio-tools .tool-popup{position:fixed;top:auto;left:4vw;width:92vw;right:auto;}.studio-header{gap:4px;}.studio-header nav{gap:3px;}}
 #repeat-plot,#burst-overview {background:#0b1a2e;border-radius:5px;}
 #repeat-plot text,#burst-overview text {fill:#d5e3f4;}
 #repeat-plot .curve,#burst-overview .curve,#burst-overview path {stroke:#44e5ea;}
 #repeat-plot .grid {stroke:#30415a;}
 #repeat-summary {margin:5px 0;}
 #point-repeat-controls {margin-top:10px;}
-#studio-inspector h2,#wave-title {font-size:18px;}
-
-body {background:#f6f7fa;} .studio-header{min-height:58px;padding:5px 15px;border-bottom:1px solid #b8c5dd;}
-.project-caption {margin-right:auto;border-left:1px solid #c2ccdc;padding-left:22px;font-size:17px;}
-#canvas-workspace {position:relative;} #canvas-workspace>summary {padding:6px 9px;}
-#canvas-workspace-menu {position:absolute;z-index:20;right:0;top:100%;width:min(340px,90vw);max-height:75vh;overflow:auto;background:white;border:1px solid var(--line);border-radius:7px;padding:12px;}
-#canvas-workspace-menu>*{margin:6px 0;} #canvas-workspace-menu .tool-popup{position:static;width:auto;box-shadow:none;}
-main{padding:8px;max-width:none;} .studio-tools{padding:8px 12px;gap:15px;margin:0 0 8px;}
-.mode-buttons{gap:10px;}.studio-tools button,.studio-tools summary{min-height:38px;padding:6px 14px;}
-#editor-layout>.panel:first-child{background:transparent;border:0;padding:0 8px;}
-#editor-layout>.panel:first-child>.toolbar{justify-content:flex-start;gap:20px;padding:5px 7px 12px;}
-#wave-title{font-size:clamp(19px,1.65vw,28px);}
-#plot{height:clamp(300px,45vh,530px);background:#051525;}
-#plot text{font-size:15px;} #plot .curve{stroke-width:3;} #plot .area{fill:transparent;}
-#canvas-readout,#fft-delta{display:flex;gap:8px;justify-content:space-around;flex-wrap:wrap;background:white;border:1px solid var(--line);border-radius:7px;padding:12px 8px;margin-top:8px;font:14px/1.4 Consolas,monospace;}
-#canvas-readout:empty{display:none;} #studio-overview{height:clamp(85px,12vh,145px)!important;}
-#studio-inspector{padding:0;border:0;background:transparent;max-height:none;position:static;}
-.rail-card{background:white;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;padding:15px;}
-.rail-card h2 {font-size:19px!important;margin-bottom:10px;}
-.rail-card label:has(input[type=checkbox]){display:block;margin:6px 0;}
-#studio-deltas{font-size:14px;} #studio-overview-panel h3{font-size:18px;}
 #plot.no-pins #annotation-layer,#plot.no-guides #measurement-layer{display:none;}
-@media(min-width:851px){#editor-layout,#editor-layout:has(#source-panel[hidden]){grid-template-columns:minmax(0,1fr) minmax(295px,25%) 28px;gap:5px;}.source-tab{padding:6px 2px;} #studio-inspector{grid-row:1;}.studio-tools{margin-right:calc(25% + 38px);}#studio-inspector{margin-top:-59px;}}
-@media(max-width:850px){.project-caption{font-size:14px;padding-left:8px;}.studio-header{gap:8px;}.studio-tools{gap:4px;}.mode-buttons{gap:3px;}}
+#canvas-workspace {position:relative;}
+#canvas-workspace > summary {padding:7px 10px; cursor:pointer;}
+#canvas-workspace-menu {position:absolute;z-index:20;right:0;top:100%;width:min(340px,90vw);max-height:75vh;overflow:auto;background:white;border:1px solid var(--line);border-radius:7px;padding:12px;}
+#canvas-workspace-menu > * {margin:6px 0;}
+.tabs {flex-wrap:wrap;gap:5px;margin-bottom:10px;border:0;}
+.tabs button {border:1px solid var(--line);border-radius:5px;padding:5px 10px;}
 #annotation-composer{position:fixed;inset:auto;margin:0;width:min(285px,90vw);border:1px solid var(--line);border-radius:8px;padding:15px;color:var(--ink);box-shadow:0 6px 24px #05152540;}
 #annotation-composer::backdrop{background:transparent;}
 #annotation-form .row{margin-top:10px;}
 #point-insertion{border:1px solid #c6d1de;border-radius:9px;padding:20px;max-width:94vw;color:var(--ink);}
 #point-insertion form{display:grid;gap:12px;}#point-insertion::backdrop{background:#16284066;}
-#wave-measurements:not([hidden]){display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin:6px 0}
-#wave-measurements span{padding:7px 12px;background:white;font-size:12px;color:#43566e}
-#wave-measurements strong{display:block;color:#142742;font-size:16px;font-variant-numeric:tabular-nums}
+#point-insertion{max-height:90dvh;overflow:auto;}
+.studio-header>*{min-width:0;max-width:100%;}
+.project-caption{overflow-wrap:anywhere;}
+@media(max-width:850px) {
+  #canvas-workspace[open] {flex-basis:100%;}
+  #canvas-workspace-menu {position:static;width:100%;max-height:60dvh;}
+}
+#editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+#editor-layout > * { min-width: 0; }
+.studio-header {
+  min-height: 64px;
+  padding: 10px clamp(12px, 2vw, 30px);
+  border-color: var(--line);
+}
+.studio-header .brand { color: #112039; font-size: 21px; }
+.studio-header .brand::before { content: "∿"; color: var(--accent); margin-right: 7px; }
+.project-caption { margin-right: auto; color: var(--muted); font-size: 14px; }
+.project-caption strong { color: var(--ink); }
+main { max-width: 1680px; padding: 14px clamp(10px, 1.5vw, 24px) 30px; }
+.studio-toolbox, .studio-plot, .studio-analysis > details, #studio-inspector .rail-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.studio-toolbox { position: relative; z-index: 3; padding: 12px; }
+.studio-toolbox h2, .rail-card h2 { font-size: 14px; }
+.studio-toolbox > div { display: flex; flex-wrap: wrap; align-items: start; gap: 7px; }
+.studio-toolbox h2 { margin-bottom: 9px; }
+.studio-toolbox details { position: relative; margin: 0; }
+.studio-toolbox > div > button, .studio-toolbox > div > details > summary, .studio-tools button {
+  min-height: 36px;
+  padding: 6px 10px;
+}
+.studio-toolbox details > summary {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.studio-toolbox details > summary:hover { background: var(--wash); }
+.studio-toolbox .tool-popup {
+  background: white;
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 7px;
+  box-shadow: 0 8px 24px #10234026;
+  max-height: 70dvh;
+  overflow: auto;
+  width: min(350px, 80vw);
+}
+.studio-toolbox .tool-popup button { margin: 3px 0; }
+.studio-toolbox .guide { border: 0; margin: 0; }
+.studio-toolbox .guide p:empty { display: none; }
+.studio-plot { padding: clamp(9px, 1.2vw, 16px); }
+.studio-plot > h2 { font-size: clamp(19px, 1.65vw, 25px); margin-bottom: 10px; }
+.studio-tools, .mode-buttons { display: flex; flex-wrap: wrap; gap: 5px; }
+.studio-tools { justify-content: space-between; align-items: center; margin-bottom: 9px; }
+.mode-buttons button[aria-pressed=true], .tabs button[aria-selected=true] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+#plot { height: clamp(300px, 44vh, 480px); }
+#plot text { font-size: 13px; }
+#canvas-readout, #fft-delta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 16px;
+  padding: 7px 0;
+  font: 13px/1.5 Consolas, monospace;
+}
+#canvas-readout:empty, #studio-deltas:empty { display: none; }
+#point-coordinates { padding: 6px 0 0; font-size: 13px; }
+#wave-measurements:not([hidden]) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+#wave-measurements span { padding: 8px 10px; background: #f7f9fd; font-size: 12px; color: #43566e; }
+#wave-measurements strong { display: block; color: #142742; font-size: 16px; font-variant-numeric: tabular-nums; }
+#studio-inspector { padding: 0; border: 0; background: transparent; }
+#studio-inspector .rail-card { padding: 12px; margin: 0 0 8px; }
+#studio-inspector .rail-card:last-child { margin-bottom: 0; }
+#studio-inspector summary, .studio-analysis > details > summary { cursor: pointer; font-weight: 650; }
+#studio-inspector :is(.row, .inspector) > label { min-width: 0; max-width: 100%; }
+#studio-inspector .rail-card label:has(input[type=checkbox]) { display: block; margin-top: 5px; }
+#studio-inspector .inspector { border: 0; padding-top: 9px; }
+#point-inspector label input { width: 100%; }
+#point-inspector { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+#point-inspector label:first-child, #update-point { grid-column: 1 / -1; }
+#studio-deltas { font: 13px/1.7 Consolas, monospace; }
+#canvas-editing > #repeat-message:empty, #plot-message:empty { display: none; }
+#canvas-editing > label { margin-top: 8px; }
+#point-repeat-controls:not([open]) ~ .repeat-help { display: none; }
+#studio-overview-panel, #repeat-preview, .studio-analysis > details { margin-bottom: 8px; padding: 9px 12px; }
+#studio-overview-panel h3, #repeat-preview h3 { margin: 0 0 4px; }
+#spectrum-panel { margin: 8px 0 0; padding: 0; border: 0; }
+#spectrum-panel + .panel { padding: 8px 0 0; border: 0; }
+#studio-overview { height: clamp(60px, 9vh, 90px) !important; }
+.source-tab { text-align: left; }
+.source-width { display: none; }
+@media (min-width: 1000px) {
+  #editor-layout {
+    grid-template-columns: clamp(152px, 14vw, 204px) minmax(0, 1fr) clamp(226px, 20vw, 310px);
+    gap: 10px 14px;
+  }
+  .studio-toolbox { grid-column: 1; grid-row: 1; }
+  .studio-toolbox > div { display: grid; }
+  .studio-toolbox .tool-popup { position: absolute; top: 0; left: calc(100% + 5px); }
+  .studio-plot { grid-column: 2; grid-row: 1; }
+  .studio-analysis { grid-column: 2; grid-row: 2; }
+  #studio-inspector, #source-panel { grid-column: 3; grid-row: 1 / span 2; }
+  #editor-layout:has(#source-panel:not([hidden])) {
+    grid-template-columns: clamp(152px, 14vw, 204px) minmax(0, 1fr) clamp(226px, var(--source-width, 36%), 58%);
+  }
+  #editor-layout:has(#source-panel:not([hidden])) #studio-inspector { display: none; }
+  .source-width { display: flex; }
+  #source { min-height: min(54vh, 620px); }
+}
+@media (max-width: 999px) {
+  .studio-toolbox details[open] { flex-basis: 100%; }
+  .studio-toolbox .tool-popup { width: 100%; max-height: 60dvh; margin-top: 6px; box-shadow: none; }
+}
+@media (max-width: 600px) {
+  .studio-header { gap: 7px; }
+  .studio-header nav { gap: 4px; }
+  body:has(#edit-panel:not([hidden])) .project-caption { display: none; }
+  .studio-toolbox > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .studio-toolbox details[open] { grid-column: 1 / -1; }
+  #studio-digitize { grid-column: span 2; }
+  .studio-header nav button, .studio-header nav summary,
+  .studio-toolbox > div > button, .studio-toolbox > div > details > summary, .studio-tools button, #studio-inspector button {
+    min-height: 44px;
+  }
+  .studio-toolbox details > summary { padding: 10px 6px; }
+  #plot { height: 270px; }
+  #wave-measurements:not([hidden]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #canvas-readout { font-size: 12px; }
+}
 #spectrum-plot{background:#0b1b2e;border-radius:6px}#spectrum-plot text{fill:#e3edf7}#spectrum-status:empty{display:none}
+/* Compact workbench chrome and the light plotting surface. */
+:root {
+  --ink: #202834;
+  --muted: #536178;
+  --line: #d2d9e4;
+  --accent: #0b6ac4;
+  --wash: #e4f0fc;
+  --canvas: #edf0f4;
+  font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+}
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent);
+}
+.studio-header {
+  min-height: 40px;
+  padding: 4px 10px;
+  justify-content: flex-start;
+  gap: 5px 12px;
+}
+.studio-header .brand { font-size: 15px; letter-spacing: -.25px; }
+.studio-header .brand::before { content: none; }
+.project-caption { font-size: 12px; margin-right: 0; }
+.studio-header nav { gap: 3px; align-items: center; }
+.studio-header button, .studio-tools button {
+  min-height: 28px;
+  padding: 3px 8px;
+}
+.studio-header button:not(.primary) { border-color: transparent; }
+.studio-header button:hover:not(:disabled) { border-color: var(--accent); }
+#canvas-workspace > summary { padding: 4px 7px; }
+#studio-export, .mode-buttons button[aria-pressed=true] {
+  background: var(--wash);
+  border-color: var(--accent);
+  color: #075da9;
+}
+main { max-width: none; padding: 0 0 20px; }
+#edit-panel > :is(.export, #legacy-preview), #trace-panel, footer { margin-inline: 10px; }
+#editor-layout { gap: 0; }
+.studio-toolbox, .studio-plot, #studio-inspector { border-radius: 0; }
+.studio-toolbox {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 0;
+}
+.studio-toolbox > h2, .studio-properties, #studio-inspector summary, #studio-inspector h2, .measurement-title {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+  letter-spacing: .025em;
+  text-transform: uppercase;
+}
+.studio-toolbox > h2 { padding: 7px 11px 4px; margin: 0; }
+.studio-toolbox > div { padding: 0 6px 8px; gap: 2px; }
+.studio-toolbox > div > button, .studio-toolbox > div > details > summary {
+  min-height: 29px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  text-align: left;
+}
+.studio-toolbox > div > button:hover, .studio-toolbox > div > details > summary:hover { background: var(--wash); }
+.studio-toolbox .tool-primary { color: #075da9; background: var(--wash); }
+.studio-toolbox .tool-glyph { display: inline-block; width: 22px; color: var(--accent); }
+.studio-toolbox .tool-popup { box-shadow: 0 7px 20px #172b451a; }
+.studio-plot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 8px;
+  padding: 6px 10px 0;
+  background: var(--canvas);
+  border: 0;
+}
+.studio-plot > :not(#wave-title):not(.studio-tools) { grid-column: 1 / -1; min-width: 0; }
+.studio-plot > #wave-title {
+  align-self: end;
+  justify-self: start;
+  padding: 5px 10px;
+  margin: 0 0 5px;
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--accent);
+  border-radius: 5px 5px 0 0;
+  background: white;
+  font-size: 13px;
+  font-weight: 650;
+  color: #075da9;
+}
+.studio-tools { margin: 0 0 5px; justify-content: flex-end; gap: 8px; }
+.mode-buttons { gap: 2px; }
+#plot {
+  height: clamp(350px, calc(100dvh - 225px), 740px);
+  background: white;
+  border-radius: 6px;
+  outline: 1px solid var(--line);
+  overflow: hidden;
+}
+#plot text { fill: #384a61; font: 11px "Segoe UI", system-ui, sans-serif; }
+#plot .grid { stroke: #cdd4df; }
+#plot .grid-minor { opacity: .35; pointer-events: none; }
+#plot .grid-frame { fill: none; stroke: #7c8899; stroke-width: 1.3; pointer-events: none; }
+#plot :is(.curve,path[clip-path][stroke="var(--accent)"]) { stroke: #0073ad; }
+#plot path[clip-path][stroke="#113b3e"] { stroke: #005b9a; }
+#plot [data-owner] { stroke: #0876b7; }
+#plot .curve { stroke-width: 1.8; }
+#plot .area { fill: none; }
+#plot .point { fill: white; stroke: #0073ad; stroke-width: 1.5; }
+#plot .selected { fill: #0b6ac4; stroke: #fff; }
+#plot #measurement-layer path { stroke: #657c98; }
+#studio-overview, #repeat-plot, #burst-overview, #spectrum-plot {
+  background: white !important;
+  outline: 1px solid var(--line);
+}
+#studio-overview :is(#overview-trace), #repeat-plot .curve, #burst-overview path, #spectrum-plot polyline[stroke="#35dfed"] { stroke: #007b96; }
+#spectrum-plot polyline[stroke="#ffae4b"] { stroke: #a95e12; }
+#repeat-plot .grid { stroke: #d5dce6; }
+#repeat-plot text, #burst-overview text, #spectrum-plot text { fill: #344964; }
+.studio-measurement {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: white;
+  border: 1px solid var(--line);
+}
+.measurement-title { margin: 0; }
+#wave-measurements:not([hidden]) {
+  border: 0;
+  border-radius: 0;
+  gap: 2px 10px;
+  margin-top: 3px;
+  background: white;
+}
+#wave-measurements span { background: white; padding: 3px 0; }
+#wave-measurements strong { font-size: 14px; font-weight: 650; }
+#canvas-readout { padding: 3px 0; font-size: 12px; color: var(--muted); }
+#plot-message { padding: 4px 8px; min-height: 0; }
+#point-coordinates { padding: 3px 8px; }
+#studio-inspector { background: white; border-top: 1px solid var(--line); }
+.studio-properties { margin: 0; padding: 8px 12px; }
+#studio-inspector .rail-card {
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  padding: 8px 12px;
+  margin: 0;
+}
+#point-inspector {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+}
+#point-inspector label {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  color: var(--muted);
+}
+#point-inspector :is(input,select) { width: 100%; padding: 4px 6px; }
+#point-inspector button { min-height: 28px; justify-self: end; padding: 4px 8px; }
+.studio-analysis { padding: 6px 10px 0; }
+@media (min-width: 1000px) {
+  #editor-layout { grid-template-columns: 200px minmax(0, 1fr) 300px; gap: 0; }
+  #editor-layout:has(#source-panel:not([hidden])) {
+    grid-template-columns: 200px minmax(0, 1fr) clamp(226px, var(--source-width, 36%), 58%);
+  }
+  .studio-toolbox, #studio-inspector { align-self: stretch; grid-row: 1 / span 2; }
+  .studio-toolbox { border-right: 1px solid var(--line); }
+  #studio-inspector { border-left: 1px solid var(--line); }
+  #canvas-workspace-menu { left: 0; right: auto; }
+}
+@media (max-width: 999px) {
+  .studio-toolbox > div { gap: 4px; }
+  .studio-plot { padding-bottom: 6px; }
+  #plot { height: clamp(285px, 46dvh, 440px); }
+}
+@media (max-width: 600px) {
+  .studio-toolbox .tool-primary { display: none; }
+  .studio-plot { grid-template-columns: minmax(0, 1fr); }
+  .studio-tools { justify-content: start; }
+  .studio-header nav button, .studio-header nav summary, .studio-tools button,
+  .studio-toolbox > div > button, .studio-toolbox > div > details > summary, #point-inspector button {
+    min-height: 44px;
+  }
+  #plot { height: 285px; }
+}
+.plot-selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 3px;
+}
+.plot-selection:has(#point-coordinates[hidden]),
+#editor-layout:has(#point-inspector[hidden]) .plot-selection { display: none; }
+#point-coordinates { padding: 4px 0; }
+#focus-point-inspector { display: none; }
+.plot-zoom button { min-width: 29px; }
+.plot-zoom button[aria-label^="Zoom"] { font-size: 16px; line-height: 1; }
+@media (max-width: 999px) {
+  #focus-point-inspector {
+    display: block;
+    flex: none;
+    min-height: 44px;
+    color: #075da9;
+    border-color: var(--accent);
+    background: var(--wash);
+  }
+}
+@media (max-width: 600px) {
+  .studio-tools { justify-content: space-between; }
+  .plot-zoom button { min-width: 44px; }
+}
 </style>
 </head>
 <body>
 <header class="studio-header">
-  <h1 class="brand">wavecraft <span>/ studio</span></h1>
-  <div class="project-caption">Project <strong id="canvas-project-name">Load pulse</strong></div><nav aria-label="Project actions">
+  <h1 class="brand">Wavecraft</h1>
+  <div class="project-caption"><strong id="canvas-project-name">Load pulse</strong></div><nav aria-label="Project actions">
     <details id="canvas-workspace"><summary>Workspace</summary><div id="canvas-workspace-menu"><button id="studio-project">Project and recovery</button></div></details><button id="canvas-save">Save project</button>
     <button id="studio-load">Load YAML</button>
     <button id="undo">Undo</button><button id="redo">Redo</button><button id="studio-export" class="primary">Export</button>
@@ -140,19 +434,46 @@ main{padding:8px;max-width:none;} .studio-tools{padding:8px 12px;gap:15px;margin
 <main>
 <div class="tabs" role="tablist" aria-label="Workspace"><button id="edit-tab" role="tab" aria-controls="edit-panel" aria-selected="true">Waveform editor</button><button id="trace-tab" role="tab" aria-controls="trace-panel" aria-selected="false">Digitize image / CSV</button></div>
 <section id="edit-panel" role="tabpanel" aria-labelledby="edit-tab">
-<div class="studio-tools"><label aria-label="Source mode"><select id="source-mode"><option value="points">Point JSON</option><option value="semantic">Semantic YAML</option></select></label><details class="studio-samples"><summary>Examples</summary><div class="tool-popup"><div><label>Example waveform<select id="library-profile"></select></label><button id="library-open">Open YAML example</button></div><div class="guide"><div class="row spread"><h2>Interactive samples</h2><div class="row"><button id="canvas-sample">Load step characterization</button><button id="scenario-edit">Text ↔ plot</button><button id="scenario-conflict">Impossible ramp</button><button id="scenario-image">Image → waveform</button><button id="scenario-periodic">Periodic</button><button id="scenario-burst">Burst 10× · 1 MHz / 1 Hz</button></div></div><p class="small" id="guide-text">Drag a point, or select it and enter exact values. The text updates after each valid edit.</p></div>
+<div class="layout" id="editor-layout">
+<aside class="studio-toolbox" aria-labelledby="toolbox-title">
+<h2 id="toolbox-title">Toolbox</h2>
+<div><button id="tool-load-step" class="tool-primary"><span class="tool-glyph" aria-hidden="true">∿</span>Load-step example</button><label aria-label="Source mode"><select id="source-mode"><option value="points">Point JSON</option><option value="semantic">Semantic YAML</option></select></label><details class="studio-samples"><summary>Examples</summary><div class="tool-popup"><div><label>Example waveform<select id="library-profile"></select></label><button id="library-open">Open YAML example</button></div><div class="guide"><div class="row spread"><h2>Interactive samples</h2><div class="row"><button id="canvas-sample">Load step characterization</button><button id="scenario-edit">Text ↔ plot</button><button id="scenario-conflict">Impossible ramp</button><button id="scenario-image">Image → waveform</button><button id="scenario-periodic">Periodic</button><button id="scenario-burst">Burst 10× · 1 MHz / 1 Hz</button></div></div><p class="small" id="guide-text">Drag a point, or select it and enter exact values. The text updates after each valid edit.</p></div>
 <div class="row toolbar"><label>Semantic sample<select id="semantic-sample"><option value="current">Current · 175% at 6 A/µs</option><option value="voltage">Signed voltage</option><option value="burst">Burst · 10× at 1 MHz / 1 Hz</option></select></label><button id="semantic-load-sample">Load semantic sample</button></div>
-</div></details><details id="semantic-new-form" class="new-wave-menu"><summary>New waveform</summary><div class="row tool-popup"><label>Name<input id="semantic-new-name" value="New waveform"></label><label>Signal<select id="semantic-new-dimension"><option value="current">Current</option><option value="voltage">Voltage</option></select></label><label>Initial level<input id="semantic-new-initial" value="0 A"></label><label>Nominal reference (optional)<input id="semantic-new-nominal" value="240 A"></label><button id="semantic-new">Create waveform</button></div></details><div class="mode-buttons" aria-label="Plot interaction"><button type="button" data-tool="off" aria-pressed="true">Select</button><button type="button" data-tool="a" aria-pressed="false">Measure</button><button type="button" data-tool="note" aria-pressed="false">Annotate</button></div><details class="insert-menu"><summary>＋ Insert</summary><div class="tool-popup"><button id="insert-relative-open">Insert point…</button><button id="add">Insert midpoint</button><button id="remove">Remove point</button><button id="studio-add-segment">Add segment…</button></div></details></div><div class="layout" id="editor-layout"><section class="panel"><div class="row spread toolbar"><h2 id="wave-title">Load pulse</h2></div>
-<details class="rail-card" id="canvas-editing"><summary>Selection and editing</summary><div id="point-inspector" class="inspector"><label>Selected point<select id="point-choice"></select></label><span id="selected-label" class="visually-hidden">Point 1</span><label>Time (µs)<input id="point-time" type="number" step="any" min="0"></label><label>Current (A)<input id="point-value" type="number" step="any"></label><button id="update-point">Update point</button><label>Maximum slew (A/µs)<input id="slew" type="number" min="0" step="any" placeholder="No limit"></label><button id="apply-slew">Set limit</button></div>
+</div></details><details id="semantic-new-form" class="new-wave-menu"><summary>New waveform</summary><div class="row tool-popup"><label>Name<input id="semantic-new-name" value="New waveform"></label><label>Signal<select id="semantic-new-dimension"><option value="current">Current</option><option value="voltage">Voltage</option></select></label><label>Initial level<input id="semantic-new-initial" value="0 A"></label><label>Nominal reference (optional)<input id="semantic-new-nominal" value="240 A"></label><button id="semantic-new">Create waveform</button></div></details><details class="insert-menu"><summary>＋ Insert</summary><div class="tool-popup"><button id="insert-relative-open">Insert point…</button><button id="add">Insert midpoint</button><button id="remove">Remove point</button><button id="studio-add-segment">Add segment…</button></div></details>
+<button id="studio-digitize"><span class="tool-glyph" aria-hidden="true">⇧</span>Digitize image / CSV</button>
+<button id="semantic-yaml-toggle" class="source-tab" aria-expanded="false" aria-controls="source-panel">Source JSON</button>
+</div></aside>
+<section class="studio-plot" aria-labelledby="wave-title">
+<h2 id="wave-title">Load pulse</h2>
+<div class="studio-tools"><div class="mode-buttons" aria-label="Plot interaction"><button type="button" data-tool="off" aria-pressed="true">Select</button><button type="button" data-tool="a" aria-pressed="false">Measure</button><button type="button" data-tool="note" aria-pressed="false">Annotate</button></div></div>
+<svg id="plot" class="plot" role="img" aria-labelledby="plot-title plot-desc"><title id="plot-title">Editable load current waveform</title><desc id="plot-desc">Select or drag a point. Insert opens point insertion. Delete removes the selected point.</desc></svg>
+<div class="plot-selection">
+  <div id="point-coordinates" class="readout" hidden></div>
+  <button type="button" id="focus-point-inspector" aria-controls="canvas-editing">Edit point</button>
+</div>
+<section class="studio-measurement" aria-labelledby="measurement-title">
+<h3 class="measurement-title" id="measurement-title">Measurements</h3>
+<div id="wave-measurements" aria-label="Waveform measurements" hidden></div>
+<div id="canvas-readout" aria-label="Cursor readings"></div>
+</section>
+<div id="plot-message" class="notice" aria-live="polite"></div>
+</section>
+<aside id="studio-inspector" class="panel" aria-labelledby="properties-title">
+<h2 class="studio-properties" id="properties-title">Properties</h2>
+<details class="rail-card" id="canvas-editing" open><summary>Selection and editing</summary><div id="point-inspector" class="inspector"><label>Selected point<select id="point-choice"></select></label><span id="selected-label" class="visually-hidden">Point 1</span><label>Time (µs)<input id="point-time" type="number" step="any" min="0"></label><label>Current (A)<input id="point-value" type="number" step="any"></label><button id="update-point">Update point</button><label>Maximum slew (A/µs)<input id="slew" type="number" min="0" step="any" placeholder="No limit"></label><button id="apply-slew">Set limit</button></div>
 <div id="semantic-authoring" hidden><div class="row"><label>Plot tool<select id="semantic-tool"><option value="select">Select</option><option value="drag">Drag selected handle</option><option value="draw">Draw explicit point</option><option value="pan">Pan / zoom</option></select></label><button id="semantic-fit">Fit plot</button><label>Snap time (µs)<input id="semantic-snap-time" type="number" min="0" step="any" value="0"></label><label><span id="semantic-snap-value-label">Snap level (A; 0 = off)</span><input id="semantic-snap-value" type="number" min="0" step="any" value="0"></label></div><div style="max-height:190px;overflow:auto"><table id="semantic-table" style="width:100%;font-size:12px;text-align:left"><caption>Authored segments · select a row</caption><thead><tr><th>ID / kind</th><th>Start (µs)</th><th>Duration (µs)</th><th>Constraint</th></tr></thead><tbody id="semantic-table-body"></tbody></table></div><details><summary>Add a segment</summary><div class="row"><label>ID<input id="semantic-add-id" value="segment"></label><label>Kind<select id="semantic-add-kind"><option value="ramp">Ramp</option><option value="hold">Hold</option><option value="points">Explicit points</option></select></label><label>Container<select id="semantic-add-parent"></select></label><label>Insert before<select id="semantic-add-before"></select></label><label>Target / point value<input id="semantic-add-target" value="175%"></label><label>Ramp control<select id="semantic-add-control"><option value="slew">Slew</option><option value="duration">Duration</option></select></label><label>Duration / slew / point time<input id="semantic-add-duration" value="6 A/us"></label><label>Absolute arrival (optional)<input id="semantic-add-arrival" placeholder="Sequential"></label><label>Maximum slew (optional)<input id="semantic-add-max-slew"></label><button id="semantic-add-segment">Preview insertion</button><button id="semantic-remove-segment">Preview removal</button></div></details><details><summary>Repeat authored pattern</summary><p class="small">Wrap all top-level segments. The pattern must return to its incoming level. Periods measure start to start.</p><div class="row"><label>Mode<select id="semantic-wrap-mode"><option value="periodic">Periodic</option><option value="burst">Burst</option></select></label><label>Repeat ID<input id="semantic-wrap-id" value="repetition"></label><label>Inner clock<select id="semantic-wrap-control"><option value="period">Period</option><option value="frequency">Frequency</option></select></label><label>Inner quantity<input id="semantic-wrap-clock" value="3 ms"></label><label>Pattern repetitions<input id="semantic-wrap-count" value="continuous"></label><label>Outer clock<select id="semantic-wrap-outer-control"><option value="period">Period</option><option value="frequency">Frequency</option></select></label><label>Outer quantity<input id="semantic-wrap-outer-clock" value="1 s"></label><label>Burst repetitions<input id="semantic-wrap-outer-count" value="continuous"></label><button id="semantic-wrap">Preview repetition</button></div></details></div><div id="semantic-inspector" hidden><div class="inspector"><label>Owning segment<select id="semantic-selection"></select></label><label>Edit<select id="semantic-operation"></select></label><label id="semantic-point-field" hidden>Source point<select id="semantic-point"></select></label><label id="semantic-control-field" hidden>Authoritative control<select id="semantic-control"></select></label><label><span id="semantic-value-label">Quantity</span><input id="semantic-value" type="text" spellcheck="false"></label><label id="semantic-second-field" hidden>Point value<input id="semantic-second" type="text" spellcheck="false"></label><button id="semantic-propose">Preview edit</button><button id="semantic-convert">Convert selected segment to points</button></div><p id="semantic-selection-info" class="small"></p><p id="semantic-resolved" class="small"></p><div class="row"><button id="semantic-insert-point">Preview point insertion</button><button id="semantic-remove-point">Preview point removal</button></div><p class="small">Dashed segments and hollow markers show compiled geometry. Select a marker to edit its owning segment. Quantity fields retain units and percentage intent.</p><pre id="semantic-proposal" class="small" style="white-space:pre-wrap;overflow-wrap:anywhere" aria-live="polite"></pre><div id="semantic-corrections" class="row"></div><div class="row"><button id="semantic-apply-edit" class="primary" disabled>Apply edit</button><button id="semantic-cancel-edit" disabled>Cancel preview</button></div></div>
-<div id="plot-message" class="notice" aria-live="polite"></div><pre id="semantic-timing" class="small" style="white-space:pre-wrap;overflow-wrap:anywhere" hidden></pre>
+<pre id="semantic-timing" class="small" style="white-space:pre-wrap;overflow-wrap:anywhere" hidden></pre>
 <details id="point-repeat-controls"><summary>Repetition settings</summary><div class="inspector"><label>Repetition<select id="repeat-mode"><option value="single">Single pattern</option><option value="periodic">Periodic</option><option value="burst">Burst</option></select></label><label data-repeat-field>Pattern period (µs)<input id="repeat-period" type="number" min="0" step="any" value="1"></label><label data-repeat-field>Pattern frequency (Hz)<input id="repeat-frequency" type="number" min="0" step="any" value="1000000"></label><label data-burst-field>Pattern repetitions per burst<input id="repeat-count" type="number" min="1" step="1" value="10"></label><label data-burst-field>Burst period (µs)<input id="burst-period" type="number" min="0" step="any" value="1000000"></label><label data-burst-field>Burst frequency (Hz)<input id="burst-frequency" type="number" min="0" step="any" value="1"></label><button id="apply-repeat">Apply repetition</button></div></details>
 <label>Simulation end time (s)<input id="simulation-end" type="number" min="0" step="any" placeholder="Automatic"></label>
-<p class="small">The editable plot shows one complete pattern. Periods measure start to start. A two-pulse pattern repeated 10 times produces 20 pulses.</p><div id="repeat-message" class="notice" role="alert"></div>
+<p class="small repeat-help">The editable plot shows one complete pattern. Periods measure start to start. A two-pulse pattern repeated 10 times produces 20 pulses.</p><div id="repeat-message" class="notice" role="alert"></div>
 </details>
-<div id="point-coordinates" class="readout" hidden></div>
-<svg id="plot" class="plot" role="img" aria-labelledby="plot-title plot-desc"><title id="plot-title">Editable load current waveform</title><desc id="plot-desc">Select or drag a point. Insert opens point insertion. Delete removes the selected point.</desc></svg>
-<div id="canvas-readout" aria-label="Cursor readings"></div><section id="studio-overview-panel" hidden aria-label="Waveform overview">
+<section class="rail-card"><h2>Cursor settings</h2><label id="cursor-picker" hidden>Active cursor<select id="studio-cursor"><option value="off">Select</option><option value="a">Cursor A</option><option value="b">Cursor B</option><option value="note">Annotate</option></select></label><div id="studio-measure-controls" class="row" hidden><label>Cursor A (µs)<input id="studio-time-a" type="number" step="any" value="0"></label><label>Cursor B (µs)<input id="studio-time-b" type="number" step="any" value="1"></label><output id="studio-deltas"></output></div>
+</section><section class="rail-card"><h2>Annotations</h2><label><input type="checkbox" id="canvas-show-notes" checked> Pinned notes</label><label><input type="checkbox" id="canvas-show-cursors" checked> Cursor guides</label>
+<div id="studio-note-controls" class="row toolbar" hidden><label>Note<input type="text" id="studio-note-text" maxlength="100" placeholder="Load step"></label><label>Time (µs)<input id="studio-note-time" type="number" step="any" value="0"></label><button id="studio-note-pin">Pin note</button><button id="studio-note-undo">Undo last note</button><output id="studio-note-status"></output></div>
+</section></aside>
+<section class="panel" id="source-panel" hidden><label class="source-width">Pane width<input type="range" id="studio-source-width" min="26" max="58" value="36" aria-label="Source pane width, percent"></label><div class="texthead"><h2><label for="source" style="font:inherit">Waveform text · JSON</label></h2><span id="text-state" class="small">In sync</span></div><textarea id="source" spellcheck="false" aria-describedby="source-help"></textarea><p id="source-help" class="small">Pairs are [time in µs, current in A]. Apply the text to update the plot. Invalid text keeps the last valid plot.</p><div class="row"><button class="primary" id="apply-text">Apply text</button><button id="discard-text">Restore valid text</button></div><div id="text-message" class="notice" role="alert"></div></section>
+<div class="studio-analysis">
+<section id="studio-overview-panel" hidden aria-label="Waveform overview">
 <div class="row spread"><h3>Full waveform</h3><span id="overview-range"></span></div>
 <svg id="studio-overview" viewBox="0 0 1000 80" preserveAspectRatio="none" aria-label="Drag the window to pan or either edge to zoom" style="background:#0b1a2e;display:block;width:100%;height:72px;touch-action:none;cursor:grab;overflow:hidden">
 <path id="overview-trace" fill="none" stroke="#44e5ea" stroke-width="2" vector-effect="non-scaling-stroke"/>
@@ -162,27 +483,22 @@ main{padding:8px;max-width:none;} .studio-tools{padding:8px 12px;gap:15px;margin
 </section>
 <div id="repeat-preview" hidden><h3>Pattern and burst preview</h3><svg id="repeat-plot" class="plot" style="height:150px" role="img" aria-label="Finite repetition preview in microseconds"></svg><div id="repeat-summary" class="small"></div><svg id="burst-overview" style="width:100%;height:100px" role="img" aria-label="Burst waveform and idle intervals in seconds" hidden></svg></div>
 
-<div id="wave-measurements" aria-label="Waveform measurements" hidden></div>
-<section id="spectrum-panel" class="panel" style="margin-top:20px" aria-labelledby="spectrum-title">
-<div class="row spread"><h2 id="spectrum-title">Frequency spectrum</h2><button id="spectrum-analyze" class="primary">Analyze / update</button></div>
+<details id="studio-spectrum"><summary>Frequency spectrum</summary>
+<section id="spectrum-panel" class="panel" aria-labelledby="spectrum-title">
+<div class="row spread"><h2 id="spectrum-title" class="visually-hidden">Frequency spectrum analysis</h2><button id="spectrum-analyze" class="primary">Analyze / update</button></div>
 <p id="spectrum-status" class="notice" role="status" aria-live="polite">Analyze the committed source. Analysis settings do not change the waveform.</p>
 <div id="spectrum-results" hidden><output id="fft-timing" class="readout"></output>
 <div class="row"><label><input type="checkbox" id="fft-log-x" checked> Log frequency</label>
 <label><input type="checkbox" id="fft-log-y" checked> Log amplitude</label></div>
 <svg id="spectrum-plot" style="width:100%;height:230px;display:block;touch-action:none;cursor:crosshair" role="img" aria-label="Harmonic peak amplitude before and after the ideal low-pass filter"></svg>
 <output id="fft-delta" aria-label="Spectrum cursor readings" aria-live="polite"></output></div></section>
-<section class="panel" aria-label="Spectrum analysis controls" style="margin-top:8px">
+<section class="panel" aria-label="Spectrum analysis controls">
 <details id="spectrum-preferences"><summary>Analysis basis and filter controls</summary><div class="row" style="align-items:end;margin-top:12px"><label>Repeat selection<select id="spectrum-repeat"><option value="">Automatic / complete record</option></select></label><label>Analysis basis<select id="spectrum-basis"><option value="schedule">Complete schedule / outer cycle</option><option value="pattern">One inner pattern period</option></select></label><label>Harmonics analyzed<input id="spectrum-count" type="number" min="1" max="2048" step="1" value="256"></label><label>Method<select id="spectrum-method"><option value="auto">Automatic FFT / exact PWL</option><option value="fft">FFT estimate</option><option value="pwl">PWL Fourier coefficients</option></select></label></div><div class="row" style="align-items:end;margin-top:12px"><label>Ideal first-order low-pass<input id="spectrum-filter" type="checkbox" checked></label><label>Cutoff frequency (Hz)<input id="spectrum-cutoff" type="number" min="0" step="any" value="1000"></label><label>RC time constant (s)<input id="spectrum-tau" type="number" min="0" step="any" value="0.00015915494309189535"></label></div><p class="small">The last edited cutoff or time constant controls the ideal model. τ = R × C = 1 / (2πfc). No component or load model applies.</p><p class="small">The complete outer cycle includes all inner repetitions and idle time. A finite record uses an explicit periodic extension for this analysis.</p></details>
 <details id="spectrum-details"><summary>Harmonic table and filtered waveform</summary><div class="row"><label>Strongest AC rows<select id="spectrum-rows"><option value="10">10</option><option value="20">20</option></select></label><button id="spectrum-csv" disabled>Download spectrum CSV</button></div><div style="overflow:auto;max-height:340px"><table style="width:100%;font-size:12px;text-align:left"><caption id="spectrum-table-caption">Strongest analyzed AC components</caption><thead><tr><th>Order</th><th>Frequency (Hz)</th><th id="spectrum-peak-heading">Peak (A)</th><th id="spectrum-rms-heading">RMS (A)</th><th>Filter gain</th><th id="spectrum-filter-heading">Filtered peak (A)</th></tr></thead><tbody id="spectrum-table"></tbody></table></div><p id="spectrum-wave-label" class="small"></p><svg id="spectrum-wave" style="width:100%;height:230px;display:block" role="img" aria-label="Band-limited periodic prediction of the filtered waveform"></svg></details>
 <details><summary>Analysis notes</summary><p id="spectrum-summary" style="font-variant-numeric:tabular-nums"></p><p id="spectrum-basis-info" class="small"></p><p id="spectrum-warnings" class="notice" style="white-space:pre-wrap;overflow-wrap:anywhere"></p><p id="spectrum-filter-summary" class="small"></p></details>
-</section>
-<div id="readout" class="readout"></div></section>
-<button id="semantic-yaml-toggle" class="source-tab" aria-expanded="false" aria-controls="source-panel">Source JSON</button>
-<aside id="studio-inspector" class="panel"><section class="rail-card"><h2>Measurements</h2><label id="cursor-picker" hidden>Active cursor<select id="studio-cursor"><option value="off">Select</option><option value="a">Cursor A</option><option value="b">Cursor B</option><option value="note">Annotate</option></select></label><div id="studio-measure-controls" class="row" hidden><label>Cursor A (µs)<input id="studio-time-a" type="number" step="any" value="0"></label><label>Cursor B (µs)<input id="studio-time-b" type="number" step="any" value="1"></label><output id="studio-deltas"></output></div>
-</section><section class="rail-card"><h2>Annotations</h2><label><input type="checkbox" id="canvas-show-notes" checked> Pinned notes</label><label><input type="checkbox" id="canvas-show-cursors" checked> Cursor guides</label>
-<div id="studio-note-controls" class="row toolbar" hidden><label>Note<input type="text" id="studio-note-text" maxlength="100" placeholder="Load step"></label><label>Time (µs)<input id="studio-note-time" type="number" step="any" value="0"></label><button id="studio-note-pin">Pin note</button><button id="studio-note-undo">Undo last note</button><output id="studio-note-status"></output></div>
-</section></aside>
-<section class="panel" id="source-panel" hidden><label class="source-width">Pane width<input type="range" id="studio-source-width" min="26" max="58" value="36" aria-label="Source pane width, percent"></label><div class="texthead"><h2><label for="source" style="font:inherit">Waveform text · JSON</label></h2><span id="text-state" class="small">In sync</span></div><textarea id="source" spellcheck="false" aria-describedby="source-help"></textarea><p id="source-help" class="small">Pairs are [time in µs, current in A]. Apply the text to update the plot. Invalid text keeps the last valid plot.</p><div class="row"><button class="primary" id="apply-text">Apply text</button><button id="discard-text">Restore valid text</button></div><div id="text-message" class="notice" role="alert"></div></section></div>
+</section></details>
+<div id="readout" class="readout"></div></div>
+</div>
 <dialog id="point-insertion" aria-labelledby="insert-heading"><form id="point-insertion-form"><h2 id="insert-heading">Insert point</h2>
 <div class="row"><label>Position<select id="insert-side"><option value="after">After</option><option value="before">Before</option></select></label><label>Reference point<select id="insert-reference"></select></label></div>
 <label>Method<select id="insert-method"><option value="xy">Absolute time and amplitude (x, y)</option><option value="delta">Offset from reference (Δx, Δy)</option><option value="rate-time">Slew rate and arrival time</option><option value="rate-level">Slew rate and arrival amplitude</option></select></label>
@@ -802,10 +1118,46 @@ function draw(){if(globalThis.WaveSemanticEditor?.active)return globalThis.WaveS
   if(!drag){const xMax=Math.max(1,doc.points.at(-1)[0])*1.06,ys=doc.points.map(p=>p[1]),lo=Math.min(0,...ys),hi=Math.max(1,...ys),pad=(hi-lo)*.12;if(pointWindow?.doc!==doc)pointWindow=null;
     scales={left,right,top,bottom,xMin:pointWindow?.first??0,xMax:pointWindow?.last??xMax,yMin:lo-pad,yMax:hi+pad};}
   const s=scales,x=v=>s.left+(v-s.xMin)/(s.xMax-s.xMin)*(s.right-s.left),y=v=>s.bottom-(v-s.yMin)/(s.yMax-s.yMin)*(s.bottom-s.top);
-  const ticks=width<420?3:5;for(let i=0;i<=ticks;i++){const xv=s.xMin+i*(s.xMax-s.xMin)/ticks,px=x(xv),yv=s.yMin+i*(s.yMax-s.yMin)/ticks,py=y(yv);node('line',{x1:px,y1:top,x2:px,y2:bottom,class:'grid'});node('text',{x:px,y:bottom+21,'text-anchor':'middle'},Number(xv.toPrecision(3)));node('line',{x1:left,y1:py,x2:right,y2:py,class:'grid'});node('text',{x:left-10,y:py+4,'text-anchor':'end'},Number(yv.toPrecision(3)));}
+  const ticks=width<420?3:8;
+  for (let step=1; step<ticks*4; step++) {
+    if (step%4===0) continue;
+    const fraction=step/(ticks*4);
+    const px=left+fraction*(right-left), py=top+fraction*(bottom-top);
+    node('line',{x1:px,y1:top,x2:px,y2:bottom,class:'grid grid-minor'});
+    node('line',{x1:left,y1:py,x2:right,y2:py,class:'grid grid-minor'});
+  }
+  node('rect',{x:left,y:top,width:right-left,height:bottom-top,class:'grid-frame'});
+  for(let i=0;i<=ticks;i++){const xv=s.xMin+i*(s.xMax-s.xMin)/ticks,px=x(xv),yv=s.yMin+i*(s.yMax-s.yMin)/ticks,py=y(yv);node('line',{x1:px,y1:top,x2:px,y2:bottom,class:'grid'});node('text',{x:px,y:bottom+21,'text-anchor':'middle'},Number(xv.toPrecision(3)));node('line',{x1:left,y1:py,x2:right,y2:py,class:'grid'});node('text',{x:left-10,y:py+4,'text-anchor':'end'},Number(yv.toPrecision(3)));}
   node('text',{x:(left+right)/2,y:height-5,'text-anchor':'middle'},'Time (µs)');node('text',{x:15,y:(top+bottom)/2,'text-anchor':'middle',transform:`rotate(-90 15 ${(top+bottom)/2})`},'Current (A)');
   const path=p.map((v,i)=>`${i?'L':'M'} ${x(v[0])} ${y(v[1])}`).join(' ');node('path',{d:path+` L ${x(p.at(-1)[0])} ${y(0)} L ${x(p[0][0])} ${y(0)} Z`,class:'area'});node('path',{d:path,class:'curve'});
-  p.forEach((v,i)=>{node('circle',{cx:x(v[0]),cy:y(v[1]),r:i===selected?6:4,class:i===selected?'selected':'point'});const hit=node('circle',{cx:x(v[0]),cy:y(v[1]),r:15,class:'hit','data-point':i});hit.addEventListener('pointerdown',e=>{if(!clean())return;e.preventDefault();selected=i;updateInspector();drag={index:i,start:clone(doc),candidate:clone(doc.points),pointerId:e.pointerId,moved:false};svg.setPointerCapture(e.pointerId);draw();});});
+  function startPointDrag(event, hitIndex) {
+    if (!clean()) return;
+    event.preventDefault();
+    const bounds = svg.getBoundingClientRect();
+    const px = event.clientX - bounds.left, py = event.clientY - bounds.top;
+    let closest = hitIndex;
+    let distance = (x(p[closest][0]) - px) ** 2 + (y(p[closest][1]) - py) ** 2;
+    p.forEach(([time, value], index) => {
+      const cx = x(time), cy = y(value);
+      if (cx < left || cx > right || cy < top || cy > bottom) return;
+      const candidate = (cx - px) ** 2 + (cy - py) ** 2;
+      if (candidate < distance) {
+        closest = index;
+        distance = candidate;
+      }
+    });
+    selected = closest;
+    updateInspector();
+    drag = {index: closest, start: clone(doc), candidate: clone(doc.points), pointerId: event.pointerId, moved: false};
+    svg.setPointerCapture(event.pointerId);
+    draw();
+  }
+  p.forEach((point, index) => {
+    const cx = x(point[0]), cy = y(point[1]), isSelected = index === selected;
+    node('circle',{cx,cy,r:isSelected?6:4,class:isSelected?'selected':'point'});
+    const hit = node('circle',{cx,cy,r:15,class:'hit','data-point':index});
+    hit.addEventListener('pointerdown', event => startPointDrag(event, index));
+  });
   const clip=node('clipPath',{id:'point-detail-clip'}),boundary=document.createElementNS(ns,'rect');
   pointCoordinates.textContent='Point '+(selected+1)+' · '+WaveCore.num(p[selected][0])+' µs · '+WaveCore.num(p[selected][1])+' A';
   pointCoordinates.hidden=$('studio-cursor').value!=='off';
@@ -938,10 +1290,10 @@ document.getElementById('studio-add-segment').onclick = () => {
   input.closest('details').open = true;
   input.focus();
 };
-document.querySelector('.studio-tools').addEventListener('click', event => {
+document.querySelector('.studio-toolbox').addEventListener('click', event => {
   if (event.target.closest('button')) event.target.closest('details')?.removeAttribute('open');
 });
-document.body?.addEventListener('click', event => document.querySelectorAll('.studio-tools details[open]').forEach(menu => {
+document.body?.addEventListener('click', event => document.querySelectorAll('.studio-toolbox details[open]').forEach(menu => {
   if (!menu.contains(event.target)) menu.open = false;
 }));
 document.getElementById('studio-source-width').oninput = event => {
@@ -964,19 +1316,31 @@ if (document.body?.ownerDocument) {
     if(!byId('legacy-preview').hidden) byId('legacy-preview').scrollIntoView({block:'start'});
   };
   const workspace=byId('canvas-workspace-menu');
-  for (const item of [document.querySelector('.tabs'),byId('source-mode').closest('label'),byId('semantic-new-form')]) workspace.append(item);
+  workspace.append(document.querySelector('.tabs'), byId('source-mode').closest('label'));
+  byId('tool-load-step').onclick = () => byId('canvas-sample').click();
+  byId('studio-digitize').onclick = () => byId('trace-tab').click();
+  byId('focus-point-inspector').onclick = () => {
+    const inspector = byId('canvas-editing');
+    inspector.open = true;
+    inspector.scrollIntoView({block: 'start'});
+    inspector.querySelector('summary').focus({preventScroll: true});
+  };
   for(const item of workspace.querySelectorAll('button')) item.addEventListener('click',()=>byId('canvas-workspace').open=false);
   byId('canvas-save').onclick=()=>byId('project-save').click();
   const toolsBar=document.querySelector('.studio-tools');
-  const zoom=document.createElement('div');zoom.className='mode-buttons';
-  for(const [name,factor] of [['Zoom in',0.5],['Zoom out',2],['Fit',0]]) {
-    const button=document.createElement('button');button.textContent=name;
+  const zoom = document.createElement('div');
+  zoom.className = 'mode-buttons plot-zoom';
+  for (const [name, label, factor] of [['Zoom in','+',0.5],['Zoom out','−',2],['Fit','Fit',0]]) {
+    const button = document.createElement('button');
+    button.textContent = label;
+    button.setAttribute('aria-label', name);
+    button.title = name;
     button.onclick=()=>{if(!factor){byId('overview-fit').click();return;}
       const a=byId('overview-first'),b=byId('overview-last'),mid=(+a.value + +b.value)/2,half=(+b.value - +a.value)*factor/2;
       byId('overview-fit').click();const end=+b.value,span=Math.min(end,half*2),start=Math.max(0,Math.min(end-span,mid-half));a.value=start;b.value=start+span;byId('overview-apply').click();};
     zoom.append(button);
   }
-  toolsBar.insertBefore(zoom,toolsBar.querySelector('.insert-menu'));
+  toolsBar.append(zoom);
   byId('canvas-show-notes').onchange=e=>byId('plot').classList.toggle('no-pins',!e.target.checked);
   byId('canvas-show-cursors').onchange=e=>byId('plot').classList.toggle('no-guides',!e.target.checked);
   document.querySelector('[data-tool="off"]').addEventListener('click',()=>byId('canvas-editing').open=true);

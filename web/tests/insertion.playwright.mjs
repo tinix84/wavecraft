@@ -57,6 +57,7 @@ test('point insertion invalidates analysis and refreshes metrics through the com
   const metrics = page.locator('#wave-measurements');
   const previousMetrics = await metrics.innerText();
   await page.click('#insert-confirm');
+  await page.click('#studio-spectrum > summary');
   assert.equal(JSON.parse(await page.inputValue('#source')).points.length, points.length + 1);
   assert.equal(await page.locator('#spectrum-results').isVisible(), false);
   assert.equal(await page.locator('#spectrum-csv').isDisabled(), true);
